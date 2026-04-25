@@ -46,7 +46,7 @@ export function StarRating({ value, onChange, label }: StarRatingProps) {
   return (
     <div>
       {label && <div className="text-xs mb-1" style={{ color: '#8a8278' }}>{label}</div>}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
           <span key={star} style={{ position: 'relative', display: 'inline-block', cursor: 'pointer' }}>
             {/* Metade esquerda — valor X.5 */}
