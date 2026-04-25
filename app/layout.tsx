@@ -17,6 +17,11 @@ const body = DM_Sans({
 export const metadata: Metadata = {
   title: 'RestaurantXD',
   description: 'Seu diário de restaurantes',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/icon-192.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
