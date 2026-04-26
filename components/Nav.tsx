@@ -26,13 +26,15 @@ export function Nav() {
               <Link
                 key={href}
                 href={href}
+                aria-label={label}
+                aria-current={active ? 'page' : undefined}
                 className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[11px] transition-colors"
                 style={{
                   color: active ? '#c9a96e' : '#8a8278',
                   background: active ? 'rgba(201,169,110,0.1)' : 'transparent',
                 }}
               >
-                <Icon size={16} />
+                <Icon size={16} aria-hidden="true" />
                 <span className="hidden sm:block">{label}</span>
               </Link>
             )
