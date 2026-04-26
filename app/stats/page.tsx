@@ -39,8 +39,15 @@ async function getStats() {
     .slice(0, 5)
 
   // Pratos mais pedidos (quem pediria de novo)
-  const wouldOrder = d.filter((x: any) => x.would_order_again).length
-  const wouldNotOrder = d.filter((x: any) => x.would_order_again === false).length
+  let wouldOrder = 0
+  let wouldNotOrder = 0
+  d.forEach((x: any) => {
+    if (x.would_order_again) {
+      wouldOrder++
+    } else if (x.would_order_again === false) {
+      wouldNotOrder++
+    }
+  })
 
   return { totalVisits, totalDishes, totalRestaurants, avgRating, topVisits, topCuisines, wouldOrder, wouldNotOrder }
 }
