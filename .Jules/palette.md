@@ -1,3 +1,3 @@
-## 2025-02-18 - Added ARIA Labels to Icon-Only Buttons
-**Learning:** Icon-only buttons in interactive forms and modals (like the ones used in `NewVisitForm.tsx`, `PeopleManager.tsx`, and `WishlistActions.tsx`) are completely invisible to screen readers without proper aria-labels.
-**Action:** Always add an `aria-label` attribute describing the action of the button when a button contains only an icon and no visible text.
+## 2026-04-26 - Navigation Accessibility Enhancement
+**Learning:** In Next.js applications where navigation labels are visually hidden on mobile viewports using Tailwind classes like `hidden sm:block`, screen readers lose the accessible name for those links. Wrapping the link content and adding an `aria-label` to the parent `<Link>` ensures the accessible name is always present. Additionally, marking decorative icons with `aria-hidden="true"` and using `aria-current="page"` for active states are crucial patterns for semantic navigation.
+**Action:** Always check mobile navigation patterns where text might be hidden. Ensure parent elements have `aria-label` and icons are hidden from screen readers to prevent redundant or missing information.
