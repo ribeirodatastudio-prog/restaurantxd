@@ -4,10 +4,14 @@ import { ratingColor } from '@/lib/utils'
 export const revalidate = 0
 
 async function getStats() {
-  const [{ data: visits }, { data: dishes }, { data: restaurants }] = await Promise.all([
-    supabase.from('visits').select('*, restaurant:restaurants(name, cuisine_type)'),
-    supabase.from('dishes').select('*'),
-    supabase.from('restaurants').select('id, name').eq('wishlist', false),
+  // ⚡ Bolt: Optimize Supabase queries to reduce payload size and memory usage.
+  // - Visits/Dishes: Fetch only necessary columns instead of `*`.
+  // - Restaurants: Use DB-side `{ count: 'exact', head: true }` instead of fetching all rows just to get `.length`.
+  // Impact: Reduces API payload size drastically (O(1) memory instead of O(N) for restaurants).
+  const [{ data: visits }, { data: dishes }, { count: totalRestaurants }] = await Promise.all([
+    supabase.from('visits').select('id, rating_overall, visited_at, restaurant:restaurants(name, cuisine_type)'),
+    supabase.from('dishes').select('would_order_again'),
+    supabase.from('restaurants').select('*', { count: 'exact', head: true }).eq('wishlist', false),
   ])
 
   const v = visits ?? []
@@ -15,7 +19,6 @@ async function getStats() {
 
   const totalVisits = v.length
   const totalDishes = d.length
-  const totalRestaurants = restaurants?.length ?? 0
 
   const rated = v.filter((x: any) => x.rating_overall)
   const avgRating = rated.length
@@ -63,7 +66,7 @@ export default async function StatsPage() {
 
       <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
         <StatCard label="Visitas" value={stats.totalVisits} />
-        <StatCard label="Lugares" value={stats.totalRestaurants} />
+        <StatCard label="Lugares" value={stats.totalRestaurants ?? 0} />
         <StatCard label="Pratos" value={stats.totalDishes} />
         <StatCard label="Média geral" value={stats.avgRating ? stats.avgRating.toFixed(1) : '—'} />
       </div>
