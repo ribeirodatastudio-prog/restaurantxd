@@ -54,7 +54,7 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
     <div className="card mt-2">
       <div className="flex items-center justify-between mb-3">
         <span className="font-display" style={{ color: '#c9a96e' }}>Novo lugar</span>
-        <button onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
+        <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
       </div>
       <div className="flex flex-col gap-2">
         <input placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />

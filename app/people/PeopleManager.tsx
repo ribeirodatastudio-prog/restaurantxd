@@ -39,7 +39,7 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
           <div className="card w-full">
             <div className="flex items-center justify-between mb-3">
               <span className="font-display" style={{ color: '#c9a96e' }}>Nova pessoa</span>
-              <button onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
+              <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
             </div>
             <div className="flex flex-col gap-2">
               <input placeholder="Nome *" value={name} onChange={e => setName(e.target.value)} />
@@ -63,7 +63,7 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
               </div>
               {p.notes && <div className="text-xs mt-1" style={{ color: '#8a8278' }}>{p.notes}</div>}
             </div>
-            <button className="btn-danger btn text-xs" onClick={() => removePerson(p.id)}>
+            <button aria-label="Remover pessoa" className="btn-danger btn text-xs" onClick={() => removePerson(p.id)}>
               <X size={13} />
             </button>
           </div>
