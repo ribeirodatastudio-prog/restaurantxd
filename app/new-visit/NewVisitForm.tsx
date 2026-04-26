@@ -246,10 +246,10 @@ export function NewVisitForm({ restaurants, people }: Props) {
                   onChange={e => { e.stopPropagation(); updateDish(i, 'name', e.target.value) }}
                   onClick={e => e.stopPropagation()}
                 />
-                <button type="button" onClick={e => { e.stopPropagation(); setDishExpanded(dishExpanded === i ? null : i) }}>
+                <button type="button" aria-label={dishExpanded === i ? "Recolher detalhes do prato" : "Expandir detalhes do prato"} onClick={e => { e.stopPropagation(); setDishExpanded(dishExpanded === i ? null : i) }}>
                   {dishExpanded === i ? <ChevronUp size={16} style={{ color: '#8a8278' }} /> : <ChevronDown size={16} style={{ color: '#8a8278' }} />}
                 </button>
-                <button type="button" onClick={e => { e.stopPropagation(); removeDish(i) }}>
+                <button type="button" aria-label="Remover prato" onClick={e => { e.stopPropagation(); removeDish(i) }}>
                   <X size={16} style={{ color: '#8a8278' }} />
                 </button>
               </div>
