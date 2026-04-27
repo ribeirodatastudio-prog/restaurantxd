@@ -1,0 +1,3 @@
+## 2026-04-27 - O(N log N) Sorting and Multiple Passes Inside map()
+**Learning:** A common performance anti-pattern in React Server Components when processing nested DB relationships is doing multiple array operations like `.reduce()`, `.filter()`, and `.sort()` inline inside a `.map()` loop. In particular, sorting an array IN PLACE to find just the maximum value changes an O(N) operation to O(N log N), making the parent `.map()` execute in O(M * N log N) time while mutating state unexpectedly.
+**Action:** Replace multiple inline array passes with a single `for` loop pass that calculates counts, averages, and extracts max/min values simultaneously in strict O(N) time without mutating data. Abstract these into helper functions to keep RSC cleaner.
