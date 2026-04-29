@@ -55,3 +55,30 @@ export function formatDate(d: string) {
     year: 'numeric',
   })
 }
+
+export function calculateVisitStats(visits: any[] | null | undefined) {
+  if (!visits || visits.length === 0) {
+    return { visit_count: 0, avg_rating: null, last_visit: null }
+  }
+
+  let totalRating = 0
+  let ratedCount = 0
+  let latestVisitDate = ''
+
+  for (let i = 0; i < visits.length; i++) {
+    const v = visits[i]
+    if (v.rating_overall) {
+      totalRating += v.rating_overall
+      ratedCount++
+    }
+    if (v.visited_at && (!latestVisitDate || v.visited_at > latestVisitDate)) {
+      latestVisitDate = v.visited_at
+    }
+  }
+
+  return {
+    visit_count: visits.length,
+    avg_rating: ratedCount > 0 ? totalRating / ratedCount : null,
+    last_visit: latestVisitDate || null,
+  }
+}
