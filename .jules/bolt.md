@@ -1,0 +1,3 @@
+## 2024-04-29 - [Optimizing data aggregations from API responses]
+**Learning:** Using chained array operations like `.reduce()`, `.filter()`, and notably `.sort()` (which mutates in-place and is slow) on nested dataset relations (like `visits` within a `restaurant` loop) from Supabase responses creates unnecessary performance overhead and memory allocations. It scales poorly from an O(N) operation to O(N log N) with multi-passes.
+**Action:** When aggregating or extracting stats (e.g. averages, last visited dates) from nested lists returned by an API, use a single-pass O(N) iteration instead of chaining high-order array functions, avoiding sorting completely if only finding max/min elements.
