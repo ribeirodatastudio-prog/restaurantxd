@@ -1,0 +1,3 @@
+## 2024-05-24 - Avoiding In-Place Sorts in Data Mapping
+**Learning:** Using `.sort()` directly on nested relation arrays (e.g., `r.visits.sort(...)`) during an `Array.prototype.map()` in JavaScript mutates the underlying array in place. This can lead to unexpected UI behavior, re-render bugs, or inconsistent state when data structures are passed by reference, on top of being an O(N log N) operation for what should simply be an O(N) max-finding operation.
+**Action:** When mapping over database results to derive aggregate data like 'latest date' or 'average rating', always use an explicit O(N) single-pass iteration function rather than chaining `.reduce()`, `.filter()`, and `.sort()`. This prevents accidental mutation and is computationally optimal.
