@@ -50,17 +50,27 @@ export function StarRating({ value, onChange, label }: StarRatingProps) {
         {[1, 2, 3, 4, 5].map((star) => (
           <span key={star} style={{ position: 'relative', display: 'inline-block', cursor: 'pointer' }}>
             {/* Metade esquerda — valor X.5 */}
-            <span
-              style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', zIndex: 1 }}
+            <button
+              type="button"
+              aria-label={`Avaliar com ${star - 0.5} estrelas`}
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1815] rounded-sm z-10 relative"
+              style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', zIndex: 1, appearance: 'none', background: 'transparent', border: 'none', padding: 0 }}
               onMouseEnter={() => setHover(star - 0.5)}
               onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover(star - 0.5)}
+              onBlur={() => setHover(null)}
               onClick={() => onChange(star - 0.5)}
             />
             {/* Metade direita — valor X.0 */}
-            <span
-              style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', zIndex: 1 }}
+            <button
+              type="button"
+              aria-label={`Avaliar com ${star} estrelas`}
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1815] rounded-sm z-10 relative"
+              style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', zIndex: 1, appearance: 'none', background: 'transparent', border: 'none', padding: 0 }}
               onMouseEnter={() => setHover(star)}
               onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover(star)}
+              onBlur={() => setHover(null)}
               onClick={() => onChange(star)}
             />
             <Star fill={fills[star - 1]} />
