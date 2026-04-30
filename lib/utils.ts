@@ -55,3 +55,32 @@ export function formatDate(d: string) {
     year: 'numeric',
   })
 }
+
+export function calculateVisitStats(visits: any[]) {
+  if (!visits || visits.length === 0) {
+    return { visit_count: 0, avg_rating: null, last_visit: null }
+  }
+
+  let count = 0
+  let sumRating = 0
+  let countRating = 0
+  let lastVisit = visits[0].visited_at
+
+  for (let i = 0; i < visits.length; i++) {
+    const v = visits[i]
+    count++
+    if (v.rating_overall) {
+      sumRating += v.rating_overall
+      countRating++
+    }
+    if (v.visited_at > lastVisit) {
+      lastVisit = v.visited_at
+    }
+  }
+
+  return {
+    visit_count: count,
+    avg_rating: countRating > 0 ? sumRating / countRating : null,
+    last_visit: lastVisit,
+  }
+}
