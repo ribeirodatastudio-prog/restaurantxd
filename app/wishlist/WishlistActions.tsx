@@ -57,7 +57,7 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
         <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
       </div>
       <div className="flex flex-col gap-2">
-        <input placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+        <input autoFocus aria-label="Nome do lugar" placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
         <div className="grid grid-cols-2 gap-2">
           <select value={form.cuisine_type} onChange={e => setForm({ ...form, cuisine_type: e.target.value })}>
             <option value="">Cozinha</option>
