@@ -1,0 +1,3 @@
+## 2024-06-25 - In-place Mutation within Array Map
+**Learning:** `Array.prototype.sort()` mutates the underlying array in place. In `app/restaurants/page.tsx`, `r.visits?.sort(...)` was modifying data during the map operation and sorting elements on the fly, which led to implicit side-effects and ran in O(N log N) time for each restaurant. Additionally, running multiple loops (reduce, filter, sort) over the same array is inefficient.
+**Action:** Always prefer creating utility functions (e.g. `calculateVisitStats`) that extract extremums and compute aggregates in a single O(N) pass to avoid in-place data mutations and excessive looping.
