@@ -177,12 +177,12 @@ export function NewVisitForm({ restaurants, people }: Props) {
         <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Detalhes</h2>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Data</label>
-            <input type="date" value={visitedAt} onChange={e => setVisitedAt(e.target.value)} required />
+            <label htmlFor="visit-date" className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Data</label>
+            <input id="visit-date" type="date" value={visitedAt} onChange={e => setVisitedAt(e.target.value)} required />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Ocasião</label>
-            <select value={occasion} onChange={e => setOccasion(e.target.value)}>
+            <label htmlFor="visit-occasion" className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Ocasião</label>
+            <select id="visit-occasion" value={occasion} onChange={e => setOccasion(e.target.value)}>
               <option value="">Sem ocasião</option>
               {OCCASIONS.map(o => <option key={o}>{o}</option>)}
             </select>
