@@ -55,3 +55,36 @@ export function formatDate(d: string) {
     year: 'numeric',
   })
 }
+
+/**
+ * Calculates visit statistics (count, avg rating, last visit date)
+ * in a single O(N) pass, preventing array mutation and O(N log N) sorting.
+ */
+export function calculateVisitStats(visits: any[] | undefined | null) {
+  if (!visits || visits.length === 0) {
+    return { visit_count: 0, avg_rating: null, last_visit: null }
+  }
+
+  let totalRating = 0
+  let ratingCount = 0
+  let lastVisitDate: string | null = null
+
+  for (const visit of visits) {
+    if (visit.rating_overall) {
+      totalRating += visit.rating_overall
+      ratingCount++
+    }
+
+    if (visit.visited_at) {
+      if (!lastVisitDate || visit.visited_at > lastVisitDate) {
+        lastVisitDate = visit.visited_at
+      }
+    }
+  }
+
+  return {
+    visit_count: visits.length,
+    avg_rating: ratingCount > 0 ? totalRating / ratingCount : null,
+    last_visit: lastVisitDate,
+  }
+}
