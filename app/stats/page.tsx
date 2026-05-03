@@ -4,10 +4,13 @@ import { ratingColor } from '@/lib/utils'
 export const revalidate = 0
 
 async function getStats() {
-  const [{ data: visits }, { data: dishes }, { data: restaurants }] = await Promise.all([
-    supabase.from('visits').select('*, restaurant:restaurants(name, cuisine_type)'),
-    supabase.from('dishes').select('*'),
-    supabase.from('restaurants').select('id, name').eq('wishlist', false),
+  const [{ data: visits }, { data: dishes }, { count: restaurantsCount }] = await Promise.all([
+    // Optimization: Select only required fields to reduce payload size
+    supabase.from('visits').select('id, visited_at, rating_overall, restaurant:restaurants(name, cuisine_type)'),
+    // Optimization: Select only would_order_again to count metrics
+    supabase.from('dishes').select('would_order_again'),
+    // Optimization: Use head: true to only get the count without fetching rows
+    supabase.from('restaurants').select('id', { count: 'exact', head: true }).eq('wishlist', false),
   ])
 
   const v = visits ?? []
@@ -15,7 +18,7 @@ async function getStats() {
 
   const totalVisits = v.length
   const totalDishes = d.length
-  const totalRestaurants = restaurants?.length ?? 0
+  const totalRestaurants = restaurantsCount ?? 0
 
   const rated = v.filter((x: any) => x.rating_overall)
   const avgRating = rated.length
