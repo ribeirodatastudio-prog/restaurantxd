@@ -119,8 +119,8 @@ export function NewVisitForm({ restaurants, people }: Props) {
       router.push('/')
       router.refresh()
     } catch (err) {
-      alert('Erro ao salvar. Verifique o console.')
-      console.error(err)
+      alert('Ocorreu um erro ao salvar a visita. Por favor, tente novamente mais tarde.')
+      console.error('Failed to save new visit')
     } finally {
       setLoading(false)
     }
