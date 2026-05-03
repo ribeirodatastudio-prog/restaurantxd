@@ -135,8 +135,10 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
         <div className="flex gap-2 mb-3">
           <button type="button" className={`btn ${!isNewRestaurant ? 'btn-primary' : 'btn-ghost'}`}
+            aria-pressed={!isNewRestaurant}
             onClick={() => setIsNewRestaurant(false)}>Existente</button>
           <button type="button" className={`btn ${isNewRestaurant ? 'btn-primary' : 'btn-ghost'}`}
+            aria-pressed={isNewRestaurant}
             onClick={() => setIsNewRestaurant(true)}>Novo lugar</button>
         </div>
 
@@ -210,6 +212,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
           <div className="flex flex-wrap gap-2">
             {people.map(p => (
               <button key={p.id} type="button"
+                aria-pressed={selectedPeople.includes(p.id)}
                 className={`tag cursor-pointer transition-colors ${selectedPeople.includes(p.id) ? 'tag-accent' : ''}`}
                 style={{ padding: '6px 14px', fontSize: 13 }}
                 onClick={() => togglePerson(p.id, selectedPeople, setSelectedPeople)}>
@@ -246,7 +249,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
                   onChange={e => { e.stopPropagation(); updateDish(i, 'name', e.target.value) }}
                   onClick={e => e.stopPropagation()}
                 />
-                <button type="button" aria-label={dishExpanded === i ? "Recolher detalhes do prato" : "Expandir detalhes do prato"} onClick={e => { e.stopPropagation(); setDishExpanded(dishExpanded === i ? null : i) }}>
+                <button type="button" aria-label={dishExpanded === i ? "Recolher detalhes do prato" : "Expandir detalhes do prato"} aria-expanded={dishExpanded === i} onClick={e => { e.stopPropagation(); setDishExpanded(dishExpanded === i ? null : i) }}>
                   {dishExpanded === i ? <ChevronUp size={16} style={{ color: '#8a8278' }} /> : <ChevronDown size={16} style={{ color: '#8a8278' }} />}
                 </button>
                 <button type="button" aria-label="Remover prato" onClick={e => { e.stopPropagation(); removeDish(i) }}>
@@ -271,6 +274,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
                     <span className="text-xs" style={{ color: '#8a8278', marginTop: 2 }}>Pediria de novo?</span>
                     {[true, false].map(v => (
                       <button key={String(v)} type="button"
+                        aria-pressed={dish.would_order_again === v}
                         className={`tag cursor-pointer ${dish.would_order_again === v ? 'tag-accent' : ''}`}
                         style={{ padding: '4px 12px', fontSize: 12 }}
                         onClick={() => updateDish(i, 'would_order_again', dish.would_order_again === v ? null : v)}>
@@ -285,6 +289,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
                       <div className="flex flex-wrap gap-2">
                         {people.map(p => (
                           <button key={p.id} type="button"
+                            aria-pressed={dish.peopleIds.includes(p.id)}
                             className={`tag cursor-pointer ${dish.peopleIds.includes(p.id) ? 'tag-accent' : ''}`}
                             style={{ padding: '4px 12px', fontSize: 12 }}
                             onClick={() => updateDish(i, 'peopleIds',
