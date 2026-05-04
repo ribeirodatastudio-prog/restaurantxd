@@ -26,6 +26,7 @@ export function Nav() {
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? 'page' : undefined}
                 className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[11px] transition-colors"
                 style={{
                   color: active ? '#c9a96e' : '#8a8278',
