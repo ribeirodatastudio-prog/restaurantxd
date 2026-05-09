@@ -1,0 +1,3 @@
+## 2026-05-09 - Optimize Payload in Aggregate Data Fetching
+**Learning:** For statistics and aggregate pages, using `select('*')` or fetching whole entities for counts downloads excessive data, straining the network payload size. Supabase supports explicit queries and precise row counting using `head: true` which significantly reduces overhead.
+**Action:** Always prefer explicit selection (`select('id, name')`) instead of `select('*')` unless all columns are strictly required. Use `{ count: 'exact', head: true }` when only counting rows is needed, completely avoiding the network cost of downloading records.
