@@ -12,20 +12,37 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   const [loading, setLoading] = useState(false)
 
   async function addPerson() {
-    if (!name.trim()) return
+    const sanitizedName = name.trim().slice(0, 100)
+    if (!sanitizedName) return
     setLoading(true)
-    await supabase.from('people').insert({ name, notes: notes || null })
-    setLoading(false)
-    setAdding(false)
-    setName('')
-    setNotes('')
-    router.refresh()
+    try {
+      const { error } = await supabase.from('people').insert({
+        name: sanitizedName,
+        notes: notes ? notes.trim().slice(0, 1000) : null
+      })
+      if (error) throw error
+      setAdding(false)
+      setName('')
+      setNotes('')
+      router.refresh()
+    } catch (err) {
+      console.error('Operation failed:', err)
+      alert('Não foi possível adicionar a pessoa.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function removePerson(id: string) {
     if (!confirm('Remover pessoa? Isso vai desvinculá-la das visitas.')) return
-    await supabase.from('people').delete().eq('id', id)
-    router.refresh()
+    try {
+      const { error } = await supabase.from('people').delete().eq('id', id)
+      if (error) throw error
+      router.refresh()
+    } catch (err) {
+      console.error('Operation failed:', err)
+      alert('Não foi possível remover a pessoa.')
+    }
   }
 
   return (
