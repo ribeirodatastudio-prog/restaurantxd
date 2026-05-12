@@ -4,3 +4,6 @@
 ## 2025-02-18 - Fix Keyboard Accessibility & ARIA in StarRating
 **Learning:** The interactive half-star rating inputs in `components/StarRating.tsx` were structurally implemented using clickable `<span>` elements without ARIA labels or focus ring handling, making them completely inaccessible to keyboard and screen-reader users.
 **Action:** Use native interactive elements like `<button>` tags with proper `aria-label` definitions. Use existing design system styling classes (`focus-visible:ring-2` etc.) combined with React `onFocus`/`onBlur` event listeners to provide reliable, visually consistent focus states.
+## 2025-02-18 - Hidden Text in Responsive Design Navigation requires ARIA Labels
+**Learning:** Responsive utility classes (like `hidden sm:block`) that visually hide descriptive text on smaller screens also hide that text from screen readers, leaving icon-only navigation links without an accessible name.
+**Action:** When creating responsive navigation links where the text label is hidden on mobile, always add an explicit `aria-label` to the parent anchor (`<Link>`) to ensure consistent accessibility across all device sizes.
