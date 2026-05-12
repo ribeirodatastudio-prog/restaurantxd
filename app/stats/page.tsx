@@ -4,10 +4,14 @@ import { ratingColor } from '@/lib/utils'
 export const revalidate = 0
 
 async function getStats() {
-  const [{ data: visits }, { data: dishes }, { data: restaurants }] = await Promise.all([
-    supabase.from('visits').select('*, restaurant:restaurants(name, cuisine_type)'),
-    supabase.from('dishes').select('*'),
-    supabase.from('restaurants').select('id, name').eq('wishlist', false),
+  const [
+    { data: visits },
+    { data: dishes },
+    { count: totalRestaurants }
+  ] = await Promise.all([
+    supabase.from('visits').select('id, rating_overall, visited_at, restaurant:restaurants(name, cuisine_type)'),
+    supabase.from('dishes').select('would_order_again'),
+    supabase.from('restaurants').select('*', { count: 'exact', head: true }).eq('wishlist', false),
   ])
 
   const v = visits ?? []
@@ -15,25 +19,38 @@ async function getStats() {
 
   const totalVisits = v.length
   const totalDishes = d.length
-  const totalRestaurants = restaurants?.length ?? 0
 
-  const rated = v.filter((x: any) => x.rating_overall)
-  const avgRating = rated.length
-    ? rated.reduce((s: number, x: any) => s + x.rating_overall, 0) / rated.length
-    : null
+  let ratedCount = 0
+  let ratingSum = 0
+  const ratedVisits: any[] = []
+  const cuisineCount: Record<string, number> = {}
+
+  for (let i = 0; i < totalVisits; i++) {
+    const x = v[i]
+
+    // Normalize relationship if array (using any to bypass generic return type mismatch)
+    if (Array.isArray(x.restaurant)) {
+      x.restaurant = (x.restaurant as any)[0]
+    }
+
+    if (x.rating_overall) {
+      ratedCount++
+      ratingSum += x.rating_overall
+      ratedVisits.push(x)
+    }
+
+    const c = (x.restaurant as any)?.cuisine_type ?? 'Outra'
+    cuisineCount[c] = (cuisineCount[c] ?? 0) + 1
+  }
+
+  const avgRating = ratedCount > 0 ? ratingSum / ratedCount : null
 
   // Top rated visits
-  const topVisits = [...v]
-    .filter((x: any) => x.rating_overall)
+  const topVisits = ratedVisits
     .sort((a: any, b: any) => b.rating_overall - a.rating_overall)
     .slice(0, 5)
 
   // Culinária mais visitada
-  const cuisineCount: Record<string, number> = {}
-  v.forEach((x: any) => {
-    const c = x.restaurant?.cuisine_type ?? 'Outra'
-    cuisineCount[c] = (cuisineCount[c] ?? 0) + 1
-  })
   const topCuisines = Object.entries(cuisineCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
@@ -41,15 +58,16 @@ async function getStats() {
   // Pratos mais pedidos (quem pediria de novo)
   let wouldOrder = 0
   let wouldNotOrder = 0
-  d.forEach((x: any) => {
+  for (let i = 0; i < totalDishes; i++) {
+    const x = d[i]
     if (x.would_order_again) {
       wouldOrder++
     } else if (x.would_order_again === false) {
       wouldNotOrder++
     }
-  })
+  }
 
-  return { totalVisits, totalDishes, totalRestaurants, avgRating, topVisits, topCuisines, wouldOrder, wouldNotOrder }
+  return { totalVisits, totalDishes, totalRestaurants: totalRestaurants ?? 0, avgRating, topVisits, topCuisines, wouldOrder, wouldNotOrder }
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {

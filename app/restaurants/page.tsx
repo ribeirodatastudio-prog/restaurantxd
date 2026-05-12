@@ -13,14 +13,35 @@ async function getRestaurants() {
     `)
     .eq('wishlist', false)
     .order('name')
-  return (data ?? []).map((r: any) => ({
-    ...r,
-    visit_count: r.visits?.length ?? 0,
-    avg_rating: r.visits?.length
-      ? (r.visits.reduce((sum: number, v: any) => sum + (v.rating_overall ?? 0), 0) / r.visits.filter((v: any) => v.rating_overall).length || null)
-      : null,
-    last_visit: r.visits?.sort((a: any, b: any) => b.visited_at.localeCompare(a.visited_at))[0]?.visited_at ?? null,
-  }))
+
+  const restaurants = data ?? []
+  for (let i = 0; i < restaurants.length; i++) {
+    const r = restaurants[i]
+    let visitCount = 0
+    let ratingSum = 0
+    let ratedCount = 0
+    let lastVisit: string | null = null
+
+    if (r.visits) {
+      visitCount = r.visits.length
+      for (let j = 0; j < visitCount; j++) {
+        const v = r.visits[j]
+        if (v.rating_overall) {
+          ratingSum += v.rating_overall
+          ratedCount++
+        }
+        if (v.visited_at && (!lastVisit || v.visited_at.localeCompare(lastVisit) > 0)) {
+          lastVisit = v.visited_at
+        }
+      }
+    }
+
+    r.visit_count = visitCount
+    r.avg_rating = ratedCount > 0 ? ratingSum / ratedCount : null
+    r.last_visit = lastVisit
+  }
+
+  return restaurants
 }
 
 export default async function RestaurantsPage() {
