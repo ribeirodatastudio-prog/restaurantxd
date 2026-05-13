@@ -7,7 +7,7 @@ export const revalidate = 0
 async function getWishlist() {
   const { data } = await supabase
     .from('restaurants')
-    .select('*')
+    .select('id, name, cuisine_type, price_range, address, notes')
     .eq('wishlist', true)
     .order('name')
   return data ?? []
