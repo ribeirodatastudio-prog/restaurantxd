@@ -14,7 +14,10 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   async function addPerson() {
     if (!name.trim()) return
     setLoading(true)
-    await supabase.from('people').insert({ name, notes: notes || null })
+    await supabase.from('people').insert({
+      name: (name || '').trim().slice(0, 100),
+      notes: (notes || '').trim().slice(0, 1000) || null
+    })
     setLoading(false)
     setAdding(false)
     setName('')
