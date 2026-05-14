@@ -34,20 +34,37 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   }
 
   async function save() {
-    if (!form.name.trim()) return
+    const safeName = form.name.trim()
+    if (!safeName) return
+    if (safeName.length > 100) return alert('Nome muito longo.')
+    const safeAddress = form.address.trim()
+    if (safeAddress.length > 255) return alert('Endereço muito longo.')
+    const safeNotes = form.notes.trim()
+    if (safeNotes.length > 1000) return alert('Notas muito longas.')
+
+    const price = form.price_range ? parseInt(form.price_range, 10) : null
+    if (price !== null && (isNaN(price) || price < 1 || price > 4)) return alert('Preço inválido.')
+
     setLoading(true)
-    await supabase.from('restaurants').insert({
-      name: form.name,
-      cuisine_type: form.cuisine_type || null,
-      price_range: form.price_range ? parseInt(form.price_range) : null,
-      address: form.address || null,
-      notes: form.notes || null,
-      wishlist: true,
-    })
-    setLoading(false)
-    setAdding(false)
-    setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
-    router.refresh()
+    try {
+      const { error } = await supabase.from('restaurants').insert({
+        name: safeName,
+        cuisine_type: form.cuisine_type || null,
+        price_range: price,
+        address: safeAddress || null,
+        notes: safeNotes || null,
+        wishlist: true,
+      })
+      if (error) throw error
+      setAdding(false)
+      setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
+      router.refresh()
+    } catch (err) {
+      console.error('Erro ao salvar:', err)
+      alert('Ocorreu um erro ao tentar salvar.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
