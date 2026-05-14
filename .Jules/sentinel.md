@@ -1,0 +1,4 @@
+## 2024-05-14 - Missing Input Validation on Client Actions
+**Vulnerability:** Next.js Client Components interacting directly with Supabase lacked input validation and sanitization. Strings were not trimmed or length-checked, and numbers were not strictly validated, introducing application-level DoS/Data Corruption vulnerabilities.
+**Learning:** Client-side forms must enforce database column constraints explicitly before API calls to avoid oversized payloads bringing down the DB or causing unhandled exceptions leaking stack traces to the user.
+**Prevention:** Always validate, trim string limits (e.g. name <= 100, notes <= 1000), and sanitize number boundaries (e.g., isNaN checks). Implement `try...catch` in action handlers to safely catch and log errors securely without returning raw exceptions to users.

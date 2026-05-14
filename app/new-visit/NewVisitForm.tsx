@@ -65,17 +65,60 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Validate inputs
+    let safeRestName = '';
+    let safeAddress = '';
+    let safeRestNotes = '';
+    let safePriceRange: number | null = null;
+
+    if (isNewRestaurant) {
+      safeRestName = newRestaurant.name.trim();
+      if (!safeRestName) return alert('Nome do restaurante é obrigatório.');
+      if (safeRestName.length > 100) return alert('Nome do restaurante muito longo.');
+
+      safeAddress = newRestaurant.address.trim();
+      if (safeAddress.length > 255) return alert('Endereço muito longo.');
+
+      safeRestNotes = newRestaurant.notes.trim();
+      if (safeRestNotes.length > 1000) return alert('Observações do restaurante muito longas.');
+
+      safePriceRange = newRestaurant.price_range ? parseInt(newRestaurant.price_range, 10) : null;
+      if (safePriceRange !== null && (isNaN(safePriceRange) || safePriceRange < 1 || safePriceRange > 4)) return alert('Preço inválido.');
+    } else {
+      if (!restaurantId) return alert('Selecione um restaurante.');
+    }
+
+    const safeVisitNotes = notes.trim();
+    if (safeVisitNotes.length > 1000) return alert('Anotações da visita muito longas.');
+
+    const validatedDishes = [];
+    for (const d of dishes) {
+      const safeDishName = d.name.trim();
+      if (!safeDishName) continue;
+      if (safeDishName.length > 100) return alert(`Nome do prato "${safeDishName.substring(0, 20)}..." muito longo.`);
+
+      const safeDishPrice = d.price ? parseFloat(d.price) : null;
+      if (safeDishPrice !== null && (isNaN(safeDishPrice) || safeDishPrice < 0)) return alert(`Preço inválido no prato "${safeDishName}".`);
+
+      validatedDishes.push({
+        ...d,
+        name: safeDishName,
+        price: safeDishPrice
+      });
+    }
+
     setLoading(true)
     try {
       let finalRestaurantId = restaurantId
 
       if (isNewRestaurant) {
         const { data, error } = await supabase.from('restaurants').insert({
-          name: newRestaurant.name,
+          name: safeRestName,
           cuisine_type: newRestaurant.cuisine_type || null,
-          price_range: newRestaurant.price_range ? parseInt(newRestaurant.price_range) : null,
-          address: newRestaurant.address || null,
-          notes: newRestaurant.notes || null,
+          price_range: safePriceRange,
+          address: safeAddress || null,
+          notes: safeRestNotes || null,
         }).select('id').single()
         if (error) throw error
         finalRestaurantId = data.id
@@ -89,7 +132,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
         rating_food: ratingFood,
         rating_service: ratingService,
         rating_ambience: ratingAmbience,
-        notes: notes || null,
+        notes: safeVisitNotes || null,
       }).select('id').single()
       if (visitError) throw visitError
 
@@ -99,14 +142,14 @@ export function NewVisitForm({ restaurants, people }: Props) {
         )
       }
 
-      for (const dish of dishes.filter(d => d.name.trim())) {
+      for (const dish of validatedDishes) {
         const { data: dishData } = await supabase.from('dishes').insert({
           visit_id: visit.id,
           name: dish.name,
           category: dish.category || null,
           rating: dish.rating,
           would_order_again: dish.would_order_again,
-          price: dish.price ? parseFloat(dish.price) : null,
+          price: dish.price,
         }).select('id').single()
 
         if (dishData && dish.peopleIds.length > 0) {
