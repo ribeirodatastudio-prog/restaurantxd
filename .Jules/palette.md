@@ -4,3 +4,7 @@
 ## 2025-02-18 - Fix Keyboard Accessibility & ARIA in StarRating
 **Learning:** The interactive half-star rating inputs in `components/StarRating.tsx` were structurally implemented using clickable `<span>` elements without ARIA labels or focus ring handling, making them completely inaccessible to keyboard and screen-reader users.
 **Action:** Use native interactive elements like `<button>` tags with proper `aria-label` definitions. Use existing design system styling classes (`focus-visible:ring-2` etc.) combined with React `onFocus`/`onBlur` event listeners to provide reliable, visually consistent focus states.
+
+## 2026-05-14 - Playwright screenshot margin error
+**Learning:** When using locator.screenshot() in Playwright within this project's environment, the `margin` keyword argument is not supported and will result in a TypeError.
+**Action:** Avoid using the `margin` argument for element screenshots; rely on standard `locator.screenshot(path=...)`.
