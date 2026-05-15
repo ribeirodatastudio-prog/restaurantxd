@@ -34,20 +34,49 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   }
 
   async function save() {
-    if (!form.name.trim()) return
+    const trimmedName = (form.name || '').trim();
+    if (!trimmedName || trimmedName.length > 100) {
+      alert('Nome inválido (máximo 100 caracteres).');
+      return;
+    }
+    const trimmedCuisine = (form.cuisine_type || '').trim();
+    if (trimmedCuisine && trimmedCuisine.length > 50) {
+      alert('Cozinha inválida (máximo 50 caracteres).');
+      return;
+    }
+    const trimmedAddress = (form.address || '').trim();
+    if (trimmedAddress && trimmedAddress.length > 255) {
+      alert('Endereço inválido (máximo 255 caracteres).');
+      return;
+    }
+    const trimmedNotes = (form.notes || '').trim();
+    if (trimmedNotes && trimmedNotes.length > 1000) {
+      alert('Notas inválidas (máximo 1000 caracteres).');
+      return;
+    }
+
+    const price = parseInt(form.price_range);
+    const parsedPrice = !isNaN(price) && price >= 1 && price <= 4 ? price : null;
+
     setLoading(true)
-    await supabase.from('restaurants').insert({
-      name: form.name,
-      cuisine_type: form.cuisine_type || null,
-      price_range: form.price_range ? parseInt(form.price_range) : null,
-      address: form.address || null,
-      notes: form.notes || null,
-      wishlist: true,
-    })
-    setLoading(false)
-    setAdding(false)
-    setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
-    router.refresh()
+    try {
+      await supabase.from('restaurants').insert({
+        name: trimmedName,
+        cuisine_type: trimmedCuisine || null,
+        price_range: parsedPrice,
+        address: trimmedAddress || null,
+        notes: trimmedNotes || null,
+        wishlist: true,
+      })
+      setAdding(false)
+      setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
+      router.refresh()
+    } catch (err) {
+      console.error('Failed to add wishlist item:', err)
+      alert('Erro ao salvar item na lista de desejos.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
