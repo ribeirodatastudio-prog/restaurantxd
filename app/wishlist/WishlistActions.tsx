@@ -34,14 +34,19 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   }
 
   async function save() {
-    if (!form.name.trim()) return
+    if (!form.name.trim()) return alert('Nome do restaurante é obrigatório')
+    if (form.name.trim().length > 100) return alert('Nome do restaurante muito longo (max 100 caracteres)');
+    if (form.address && form.address.trim().length > 255) return alert('Endereço muito longo (max 255 caracteres)');
+    if (form.notes && form.notes.trim().length > 1000) return alert('Observações muito longas (max 1000 caracteres)');
+    if (form.price_range && isNaN(parseInt(form.price_range))) return alert('Faixa de preço inválida');
+
     setLoading(true)
     await supabase.from('restaurants').insert({
-      name: form.name,
+      name: form.name.trim(),
       cuisine_type: form.cuisine_type || null,
       price_range: form.price_range ? parseInt(form.price_range) : null,
-      address: form.address || null,
-      notes: form.notes || null,
+      address: form.address ? form.address.trim() : null,
+      notes: form.notes ? form.notes.trim() : null,
       wishlist: true,
     })
     setLoading(false)

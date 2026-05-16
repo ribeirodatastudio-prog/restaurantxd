@@ -65,17 +65,27 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Security enhancement: Input length validation
+    if (isNewRestaurant) {
+      if ((newRestaurant.name || '').trim().length === 0) return alert('Nome do restaurante é obrigatório');
+      if ((newRestaurant.name || '').trim().length > 100) return alert('Nome do restaurante muito longo (max 100 caracteres)');
+      if ((newRestaurant.address || '').trim().length > 255) return alert('Endereço muito longo (max 255 caracteres)');
+      if ((newRestaurant.notes || '').trim().length > 1000) return alert('Observações muito longas (max 1000 caracteres)');
+      if (newRestaurant.price_range && isNaN(parseInt(newRestaurant.price_range))) return alert('Faixa de preço inválida');
+    }
+
     setLoading(true)
     try {
       let finalRestaurantId = restaurantId
 
       if (isNewRestaurant) {
         const { data, error } = await supabase.from('restaurants').insert({
-          name: newRestaurant.name,
+          name: (newRestaurant.name || '').trim(),
           cuisine_type: newRestaurant.cuisine_type || null,
           price_range: newRestaurant.price_range ? parseInt(newRestaurant.price_range) : null,
-          address: newRestaurant.address || null,
-          notes: newRestaurant.notes || null,
+          address: (newRestaurant.address || '').trim() || null,
+          notes: (newRestaurant.notes || '').trim() || null,
         }).select('id').single()
         if (error) throw error
         finalRestaurantId = data.id
