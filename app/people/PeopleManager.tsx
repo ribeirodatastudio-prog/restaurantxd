@@ -12,9 +12,12 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   const [loading, setLoading] = useState(false)
 
   async function addPerson() {
-    if (!name.trim()) return
+    if (!name.trim()) return alert('Nome é obrigatório');
+    if (name.trim().length > 100) return alert('Nome muito longo (max 100 caracteres)');
+    if (notes && notes.trim().length > 1000) return alert('Notas muito longas (max 1000 caracteres)');
+
     setLoading(true)
-    await supabase.from('people').insert({ name, notes: notes || null })
+    await supabase.from('people').insert({ name: name.trim(), notes: notes ? notes.trim() : null })
     setLoading(false)
     setAdding(false)
     setName('')
