@@ -70,16 +70,28 @@ export function NewVisitForm({ restaurants, people }: Props) {
       let finalRestaurantId = restaurantId
 
       if (isNewRestaurant) {
+        const safeName = newRestaurant.name.trim().slice(0, 100)
+        const safeAddress = newRestaurant.address ? newRestaurant.address.trim().slice(0, 255) : null
+        const safeNotes = newRestaurant.notes ? newRestaurant.notes.trim().slice(0, 1000) : null
+        const parsedPrice = parseInt(newRestaurant.price_range)
+        const safePrice = isNaN(parsedPrice) ? null : parsedPrice
+
+        if (!safeName) {
+          throw new Error('Nome do restaurante é obrigatório')
+        }
+
         const { data, error } = await supabase.from('restaurants').insert({
-          name: newRestaurant.name,
+          name: safeName,
           cuisine_type: newRestaurant.cuisine_type || null,
-          price_range: newRestaurant.price_range ? parseInt(newRestaurant.price_range) : null,
-          address: newRestaurant.address || null,
-          notes: newRestaurant.notes || null,
+          price_range: safePrice,
+          address: safeAddress,
+          notes: safeNotes,
         }).select('id').single()
         if (error) throw error
         finalRestaurantId = data.id
       }
+
+      const safeVisitNotes = notes ? notes.trim().slice(0, 1000) : null
 
       const { data: visit, error: visitError } = await supabase.from('visits').insert({
         restaurant_id: finalRestaurantId,
@@ -89,7 +101,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
         rating_food: ratingFood,
         rating_service: ratingService,
         rating_ambience: ratingAmbience,
-        notes: notes || null,
+        notes: safeVisitNotes,
       }).select('id').single()
       if (visitError) throw visitError
 
@@ -100,13 +112,17 @@ export function NewVisitForm({ restaurants, people }: Props) {
       }
 
       for (const dish of dishes.filter(d => d.name.trim())) {
+        const safeDishName = dish.name.trim().slice(0, 100)
+        const parsedDishPrice = dish.price ? parseFloat(dish.price) : null
+        const safeDishPrice = parsedDishPrice === null || isNaN(parsedDishPrice) ? null : parsedDishPrice
+
         const { data: dishData } = await supabase.from('dishes').insert({
           visit_id: visit.id,
-          name: dish.name,
+          name: safeDishName,
           category: dish.category || null,
           rating: dish.rating,
           would_order_again: dish.would_order_again,
-          price: dish.price ? parseFloat(dish.price) : null,
+          price: safeDishPrice,
         }).select('id').single()
 
         if (dishData && dish.peopleIds.length > 0) {
