@@ -11,7 +11,8 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function addPerson() {
+  async function addPerson(e?: React.FormEvent) {
+    e?.preventDefault()
     if (!name.trim()) return
     setLoading(true)
     await supabase.from('people').insert({ name, notes: notes || null })
@@ -36,19 +37,19 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
             <Plus size={16} /> Adicionar pessoa
           </button>
         ) : (
-          <div className="card w-full">
+          <form className="card w-full" onSubmit={addPerson}>
             <div className="flex items-center justify-between mb-3">
               <span className="font-display" style={{ color: '#c9a96e' }}>Nova pessoa</span>
-              <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
+              <button type="button" aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
             </div>
             <div className="flex flex-col gap-2">
-              <input placeholder="Nome *" value={name} onChange={e => setName(e.target.value)} />
-              <input placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
-              <button className="btn btn-primary" onClick={addPerson} disabled={loading}>
+              <input aria-label="Nome da pessoa" placeholder="Nome *" value={name} onChange={e => setName(e.target.value)} />
+              <input aria-label="Notas sobre a pessoa" placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
+              <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'Salvando…' : 'Salvar'}
               </button>
             </div>
-          </div>
+          </form>
         )}
       </div>
 
