@@ -70,12 +70,15 @@ export function NewVisitForm({ restaurants, people }: Props) {
       let finalRestaurantId = restaurantId
 
       if (isNewRestaurant) {
+        const parsedPrice = parseInt(newRestaurant.price_range)
+        const validPrice = !isNaN(parsedPrice) && parsedPrice >= 1 && parsedPrice <= 4 ? parsedPrice : null
+
         const { data, error } = await supabase.from('restaurants').insert({
-          name: newRestaurant.name,
-          cuisine_type: newRestaurant.cuisine_type || null,
-          price_range: newRestaurant.price_range ? parseInt(newRestaurant.price_range) : null,
-          address: newRestaurant.address || null,
-          notes: newRestaurant.notes || null,
+          name: newRestaurant.name.trim().substring(0, 100),
+          cuisine_type: (newRestaurant.cuisine_type || '').trim().substring(0, 50) || null,
+          price_range: validPrice,
+          address: (newRestaurant.address || '').trim().substring(0, 255) || null,
+          notes: (newRestaurant.notes || '').trim().substring(0, 1000) || null,
         }).select('id').single()
         if (error) throw error
         finalRestaurantId = data.id
@@ -84,12 +87,12 @@ export function NewVisitForm({ restaurants, people }: Props) {
       const { data: visit, error: visitError } = await supabase.from('visits').insert({
         restaurant_id: finalRestaurantId,
         visited_at: visitedAt,
-        occasion: occasion || null,
-        rating_overall: ratingOverall,
-        rating_food: ratingFood,
-        rating_service: ratingService,
-        rating_ambience: ratingAmbience,
-        notes: notes || null,
+        occasion: (occasion || '').trim().substring(0, 50) || null,
+        rating_overall: ratingOverall !== null && ratingOverall >= 1 && ratingOverall <= 5 ? ratingOverall : null,
+        rating_food: ratingFood !== null && ratingFood >= 1 && ratingFood <= 5 ? ratingFood : null,
+        rating_service: ratingService !== null && ratingService >= 1 && ratingService <= 5 ? ratingService : null,
+        rating_ambience: ratingAmbience !== null && ratingAmbience >= 1 && ratingAmbience <= 5 ? ratingAmbience : null,
+        notes: (notes || '').trim().substring(0, 1000) || null,
       }).select('id').single()
       if (visitError) throw visitError
 
@@ -100,13 +103,16 @@ export function NewVisitForm({ restaurants, people }: Props) {
       }
 
       for (const dish of dishes.filter(d => d.name.trim())) {
+        const parsedPrice = parseFloat(dish.price)
+        const validPrice = !isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : null
+
         const { data: dishData } = await supabase.from('dishes').insert({
           visit_id: visit.id,
-          name: dish.name,
-          category: dish.category || null,
-          rating: dish.rating,
+          name: dish.name.trim().substring(0, 100),
+          category: (dish.category || '').trim().substring(0, 50) || null,
+          rating: dish.rating !== null && dish.rating >= 1 && dish.rating <= 5 ? dish.rating : null,
           would_order_again: dish.would_order_again,
-          price: dish.price ? parseFloat(dish.price) : null,
+          price: validPrice,
         }).select('id').single()
 
         if (dishData && dish.peopleIds.length > 0) {
