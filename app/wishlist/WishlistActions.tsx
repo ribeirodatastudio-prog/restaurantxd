@@ -36,12 +36,13 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   async function save() {
     if (!form.name.trim()) return
     setLoading(true)
+    const parsedPrice = parseInt(form.price_range);
     await supabase.from('restaurants').insert({
-      name: form.name,
+      name: (form.name || '').trim().substring(0, 100),
       cuisine_type: form.cuisine_type || null,
-      price_range: form.price_range ? parseInt(form.price_range) : null,
-      address: form.address || null,
-      notes: form.notes || null,
+      price_range: !isNaN(parsedPrice) ? parsedPrice : null,
+      address: (form.address || '').trim().substring(0, 255) || null,
+      notes: (form.notes || '').trim().substring(0, 1000) || null,
       wishlist: true,
     })
     setLoading(false)
