@@ -57,20 +57,20 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
         <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
       </div>
       <div className="flex flex-col gap-2">
-        <input placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+        <input aria-label="Nome" placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
         <div className="grid grid-cols-2 gap-2">
-          <select value={form.cuisine_type} onChange={e => setForm({ ...form, cuisine_type: e.target.value })}>
+          <select aria-label="Cozinha" value={form.cuisine_type} onChange={e => setForm({ ...form, cuisine_type: e.target.value })}>
             <option value="">Cozinha</option>
             {CUISINE_TYPES.map(c => <option key={c}>{c}</option>)}
           </select>
-          <select value={form.price_range} onChange={e => setForm({ ...form, price_range: e.target.value })}>
+          <select aria-label="Preço" value={form.price_range} onChange={e => setForm({ ...form, price_range: e.target.value })}>
             <option value="">Preço</option>
             <option value="1">R$</option><option value="2">R$R$</option>
             <option value="3">R$R$R$</option><option value="4">R$R$R$R$</option>
           </select>
         </div>
-        <input placeholder="Endereço" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
-        <textarea placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+        <input aria-label="Endereço" placeholder="Endereço" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+        <textarea aria-label="Notas" placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
         <button className="btn btn-primary" onClick={save} disabled={loading}>
           {loading ? 'Salvando…' : 'Salvar'}
         </button>
