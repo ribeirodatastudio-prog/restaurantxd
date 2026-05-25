@@ -1,0 +1,3 @@
+## 2024-05-25 - Single-pass Iteration for Performance
+**Learning:** During data aggregation (e.g., calculating averages, grouping counts, filtering), chaining multiple array methods like `.filter()`, `.map()`, `.reduce()`, and `.forEach()` creates unnecessary intermediate array allocations and causes redundant iterations over the same data. In a Node/Next.js environment, this can unnecessarily block the main thread or degrade performance on large datasets.
+**Action:** Replace chained array methods with a single pass using a standard `for` loop to compute multiple derived metrics concurrently, minimizing intermediate memory allocations and execution time.
