@@ -17,8 +17,14 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
         className="btn btn-ghost text-xs"
         title="Marcar como visitado (remove da wishlist)"
         onClick={async () => {
-          await supabase.from('restaurants').update({ wishlist: false }).eq('id', restaurantId)
-          router.refresh()
+          try {
+            const { error } = await supabase.from('restaurants').update({ wishlist: false }).eq('id', restaurantId)
+            if (error) throw error
+            router.refresh()
+          } catch (err) {
+            alert('Erro ao atualizar restaurante.')
+            console.error('Error updating wishlist status:', err)
+          }
         }}>
         <CheckCheck size={14} /> Visitei
       </button>
@@ -36,18 +42,25 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   async function save() {
     if (!form.name.trim()) return
     setLoading(true)
-    await supabase.from('restaurants').insert({
-      name: form.name,
-      cuisine_type: form.cuisine_type || null,
-      price_range: form.price_range ? parseInt(form.price_range) : null,
-      address: form.address || null,
-      notes: form.notes || null,
-      wishlist: true,
-    })
-    setLoading(false)
-    setAdding(false)
-    setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
-    router.refresh()
+    try {
+      const { error } = await supabase.from('restaurants').insert({
+        name: form.name.substring(0, 100),
+        cuisine_type: form.cuisine_type ? form.cuisine_type.substring(0, 50) : null,
+        price_range: form.price_range ? parseInt(form.price_range || '') : null,
+        address: form.address ? form.address.substring(0, 200) : null,
+        notes: form.notes ? form.notes.substring(0, 500) : null,
+        wishlist: true,
+      })
+      if (error) throw error
+      setAdding(false)
+      setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
+      router.refresh()
+    } catch (err) {
+      alert('Erro ao salvar restaurante.')
+      console.error('Error adding to wishlist:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
