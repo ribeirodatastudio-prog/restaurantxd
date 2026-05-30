@@ -2,3 +2,8 @@
 **Vulnerability:** The application was missing standard HTTP security headers globally (such as HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy).
 **Learning:** Next.js uses an empty `next.config.js` by default without enforcing strict security headers out of the box. Leaving these headers absent exposes the application to common baseline web vulnerabilities like MIME sniffing, Clickjacking, non-HTTPS downgrades, and overly permissive referrer leaks.
 **Prevention:** Always configure an `async headers()` method in `next.config.js` to define fundamental defense-in-depth security headers like `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, and `Referrer-Policy`.
+
+## 2025-10-24 - Missing Input Validation and Error Handling
+**Vulnerability:** User inputs across multiple client components (WishlistActions, PeopleManager, NewVisitForm) were directly passed to Supabase insertions without length bounds, risking DoS or Database exceptions. In addition, Supabase requests lacked explicit try...catch logic checking `error`, risking swallowed failure contexts.
+**Learning:** In Supabase, missing string length sanitization can trigger unintended Postgres issues on very large inputs. Furthermore, Supabase doesn't automatically throw on `insert` errors; it returns `{ data, error }`, meaning code without `if (error) throw error` will silently fail security and validation assumptions.
+**Prevention:** Always sanitize/limit length of text inputs directly prior to Supabase DB mutations (e.g., `value.substring(0, 100)`). Wrap all database operations in standard `try...catch` blocks and explicitly assert `if (error) throw error` immediately after the Supabase await to ensure proper error visibility and propagation.
