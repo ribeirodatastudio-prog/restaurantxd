@@ -3,6 +3,7 @@ import { formatDate, priceLabel, ratingColor } from '@/lib/utils'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Utensils } from 'lucide-react'
+import { DeleteVisitButton } from './DeleteVisitButton'
 
 export const revalidate = 0
 
@@ -50,9 +51,12 @@ export default async function VisitPage({ params }: { params: { id: string } }) 
 
   return (
     <div>
-      <Link href="/" className="flex items-center gap-1 text-sm mb-5" style={{ color: '#8a8278' }}>
-        <ArrowLeft size={15} /> Voltar
-      </Link>
+      <div className="flex items-center justify-between mb-5">
+        <Link href="/" className="flex items-center gap-1 text-sm" style={{ color: '#8a8278' }}>
+          <ArrowLeft size={15} /> Voltar
+        </Link>
+        <DeleteVisitButton id={visit.id} />
+      </div>
 
       {/* Cabeçalho */}
       <div className="card mb-4">
