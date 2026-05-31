@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { StarRating } from '@/components/StarRating'
@@ -28,6 +28,20 @@ export function NewVisitForm({ restaurants, people }: Props) {
   const [restaurantId, setRestaurantId] = useState('')
   const [newRestaurant, setNewRestaurant] = useState({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
   const [isNewRestaurant, setIsNewRestaurant] = useState(false)
+  const [restaurantSearchQuery, setRestaurantSearchQuery] = useState('')
+
+  // Derived state for existing restaurants
+  const filteredRestaurants = restaurants.filter(r =>
+    r.name.toLowerCase().includes(restaurantSearchQuery.toLowerCase()) ||
+    (r.cuisine_type && r.cuisine_type.toLowerCase().includes(restaurantSearchQuery.toLowerCase()))
+  )
+
+  const selectedRestaurantObj = restaurants.find(r => r.id === restaurantId)
+
+  // Derived state for new restaurant similar matches
+  const similarRestaurants = newRestaurant.name.trim().length > 2
+    ? restaurants.filter(r => r.name.toLowerCase().includes(newRestaurant.name.toLowerCase()))
+    : []
 
   // Visita
   const [visitedAt, setVisitedAt] = useState(new Date().toISOString().split('T')[0])
@@ -63,8 +77,43 @@ export function NewVisitForm({ restaurants, people }: Props) {
     set(arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id])
   }
 
+  // Calculate Food Rating automatically if dishes have ratings
+  useEffect(() => {
+    const ratedDishes = dishes.filter(d => d.rating !== null)
+    if (ratedDishes.length > 0) {
+      const sum = ratedDishes.reduce((acc, d) => acc + (d.rating || 0), 0)
+      setRatingFood(Number((sum / ratedDishes.length).toFixed(1)))
+    }
+  }, [dishes])
+
+  const hasRatedDishes = dishes.some(d => d.rating !== null)
+
+  // Calculate Overall Rating automatically
+  useEffect(() => {
+    const ratings = [ratingFood, ratingService, ratingAmbience].filter(r => r !== null) as number[]
+    if (ratings.length > 0) {
+      const sum = ratings.reduce((acc, r) => acc + r, 0)
+
+      // Round to nearest 0.5 for the overall star rating visualization,
+      // or we can just let it be exact and the Star component will round down to the nearest 0.5.
+      // E.g. Math.round((sum / ratings.length) * 2) / 2
+      let avg = sum / ratings.length
+      avg = Math.round(avg * 2) / 2
+
+      setRatingOverall(avg)
+    } else {
+      setRatingOverall(null)
+    }
+  }, [ratingFood, ratingService, ratingAmbience])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    if (!isNewRestaurant && !restaurantId) {
+      alert('Por favor, selecione um restaurante existente ou adicione um novo.')
+      return
+    }
+
     setLoading(true)
     try {
       let finalRestaurantId = restaurantId
@@ -141,16 +190,80 @@ export function NewVisitForm({ restaurants, people }: Props) {
         </div>
 
         {!isNewRestaurant ? (
-          <select value={restaurantId} onChange={e => setRestaurantId(e.target.value)} required={!isNewRestaurant}>
-            <option value="">Escolha o restaurante…</option>
-            {restaurants.map(r => (
-              <option key={r.id} value={r.id}>{r.name}{r.cuisine_type ? ` — ${r.cuisine_type}` : ''}</option>
-            ))}
-          </select>
+          <div>
+            {restaurantId ? (
+              <div className="flex items-center justify-between p-3" style={{ border: '1px solid #3a3630', borderRadius: 8, background: '#1a1815' }}>
+                <div>
+                  <div className="font-display text-lg">{selectedRestaurantObj?.name}</div>
+                  {selectedRestaurantObj?.cuisine_type && (
+                    <div className="text-xs" style={{ color: '#8a8278' }}>{selectedRestaurantObj.cuisine_type}</div>
+                  )}
+                </div>
+                <button type="button" className="btn btn-ghost text-xs" onClick={() => setRestaurantId('')}>Trocar</button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 relative">
+                <input
+                  type="text"
+                  placeholder="Buscar restaurante…"
+                  value={restaurantSearchQuery}
+                  onChange={e => setRestaurantSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+                <div className="flex flex-col max-h-48 overflow-y-auto" style={{ border: '1px solid #3a3630', borderRadius: 8, background: '#1a1815' }}>
+                  {filteredRestaurants.length > 0 ? (
+                    filteredRestaurants.map(r => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        className="text-left px-3 py-2 hover:bg-[#2a2622] transition-colors border-b border-[#2a2622] last:border-b-0"
+                        onClick={() => {
+                          setRestaurantId(r.id)
+                          setRestaurantSearchQuery('')
+                        }}
+                      >
+                        <div className="font-medium">{r.name}</div>
+                        {r.cuisine_type && <div className="text-xs" style={{ color: '#8a8278' }}>{r.cuisine_type}</div>}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-3 text-sm text-center" style={{ color: '#8a8278' }}>Nenhum restaurante encontrado.</div>
+                  )}
+                </div>
+              </div>
+            )}
+            {!isNewRestaurant && !restaurantId && (
+              <input type="text" className="sr-only" required tabIndex={-1} value={restaurantId} onChange={() => {}} />
+            )}
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <input placeholder="Nome do restaurante *" required={isNewRestaurant}
-              value={newRestaurant.name} onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
+            <div className="relative">
+              <input placeholder="Nome do restaurante *" required={isNewRestaurant}
+                value={newRestaurant.name} onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
+
+              {similarRestaurants.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-20 flex flex-col max-h-48 overflow-y-auto shadow-lg" style={{ border: '1px solid #3a3630', borderRadius: 8, background: '#1a1815' }}>
+                  <div className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider" style={{ color: '#8a8278', background: '#0f0e0d' }}>Restaurantes similares já cadastrados</div>
+                  {similarRestaurants.map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className="text-left px-3 py-2 hover:bg-[#2a2622] transition-colors border-b border-[#2a2622] last:border-b-0"
+                      onClick={() => {
+                        setRestaurantId(r.id)
+                        setIsNewRestaurant(false)
+                        setNewRestaurant({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
+                      }}
+                    >
+                      <div className="font-medium">{r.name}</div>
+                      {r.cuisine_type && <div className="text-xs" style={{ color: '#8a8278' }}>{r.cuisine_type}</div>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <select value={newRestaurant.cuisine_type} onChange={e => setNewRestaurant({ ...newRestaurant, cuisine_type: e.target.value })}>
                 <option value="">Tipo de cozinha</option>
@@ -196,8 +309,13 @@ export function NewVisitForm({ restaurants, people }: Props) {
       <div className="card">
         <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Avaliações</h2>
         <div className="flex flex-col gap-4">
-          <StarRating label="Geral" value={ratingOverall} onChange={setRatingOverall} />
-          <StarRating label="Comida" value={ratingFood} onChange={setRatingFood} />
+          <StarRating label="Geral (Média)" value={ratingOverall} onChange={() => {}} readonly />
+          <StarRating
+            label={hasRatedDishes ? "Comida (Média dos pratos)" : "Comida"}
+            value={ratingFood}
+            onChange={setRatingFood}
+            readonly={hasRatedDishes}
+          />
           <StarRating label="Atendimento" value={ratingService} onChange={setRatingService} />
           <StarRating label="Ambiente" value={ratingAmbience} onChange={setRatingAmbience} />
         </div>
