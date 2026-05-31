@@ -143,25 +143,29 @@ export function NewVisitForm({ restaurants, people }: Props) {
       if (visitError) throw visitError
 
       if (selectedPeople.length > 0) {
-        await supabase.from('visit_people').insert(
+        const { error: visitPeopleError } = await supabase.from('visit_people').insert(
           selectedPeople.map(pid => ({ visit_id: visit.id, person_id: pid }))
         )
+        if (visitPeopleError) throw visitPeopleError
       }
 
       for (const dish of dishes.filter(d => d.name.trim())) {
-        const { data: dishData } = await supabase.from('dishes').insert({
+        const { data: dishData, error: dishError } = await supabase.from('dishes').insert({
           visit_id: visit.id,
-          name: dish.name,
-          category: dish.category || null,
+          name: dish.name.substring(0, 100),
+          category: dish.category ? dish.category.substring(0, 50) : null,
           rating: dish.rating,
           would_order_again: dish.would_order_again,
-          price: dish.price ? parseFloat(dish.price) : null,
+          price: dish.price ? parseFloat(dish.price || '') : null,
         }).select('id').single()
 
+        if (dishError) throw dishError
+
         if (dishData && dish.peopleIds.length > 0) {
-          await supabase.from('dish_people').insert(
+          const { error: dishPeopleError } = await supabase.from('dish_people').insert(
             dish.peopleIds.map(pid => ({ dish_id: dishData.id, person_id: pid }))
           )
+          if (dishPeopleError) throw dishPeopleError
         }
       }
 
