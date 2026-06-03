@@ -71,3 +71,19 @@ create table dish_people (
 create index on visits(restaurant_id);
 create index on visits(visited_at desc);
 create index on dishes(visit_id);
+
+-- Habilitar Row Level Security (RLS)
+alter table restaurants enable row level security;
+alter table people enable row level security;
+alter table visits enable row level security;
+alter table dishes enable row level security;
+alter table visit_people enable row level security;
+alter table dish_people enable row level security;
+
+-- Criar políticas de acesso (permite tudo, pois é um app de uso pessoal)
+create policy "Allow all operations" on restaurants for all using (true) with check (true);
+create policy "Allow all operations" on people for all using (true) with check (true);
+create policy "Allow all operations" on visits for all using (true) with check (true);
+create policy "Allow all operations" on dishes for all using (true) with check (true);
+create policy "Allow all operations" on visit_people for all using (true) with check (true);
+create policy "Allow all operations" on dish_people for all using (true) with check (true);
