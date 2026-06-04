@@ -1,0 +1,3 @@
+## 2024-05-24 - Supabase Select Optimization
+**Learning:** Selecting full rows (`select('*')`) and unnecessary relationships for aggregate metrics significantly increases network payload size. In `app/stats/page.tsx`, fetching all columns for visits, dishes, and restaurants just to compute counts and averages is inefficient. Further, for counting records, fetching rows instead of using `{ count: 'exact', head: true }` is highly inefficient.
+**Action:** Always explicitly define required columns (e.g., `select('id, rating_overall')`), and use `{ count: 'exact', head: true }` when only a record count is needed. Avoid `select('*')`.
