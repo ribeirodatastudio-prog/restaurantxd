@@ -4,23 +4,42 @@ import Link from 'next/link'
 
 export const revalidate = 0
 
+// ⚡ Bolt: explicitly selected fields and replaced array methods in map with a single loop
 async function getRestaurants() {
   const { data } = await supabase
     .from('restaurants')
     .select(`
-      *,
+      id, name, cuisine_type, price_range, address,
       visits(id, visited_at, rating_overall)
     `)
     .eq('wishlist', false)
     .order('name')
-  return (data ?? []).map((r: any) => ({
-    ...r,
-    visit_count: r.visits?.length ?? 0,
-    avg_rating: r.visits?.length
-      ? (r.visits.reduce((sum: number, v: any) => sum + (v.rating_overall ?? 0), 0) / r.visits.filter((v: any) => v.rating_overall).length || null)
-      : null,
-    last_visit: r.visits?.sort((a: any, b: any) => b.visited_at.localeCompare(a.visited_at))[0]?.visited_at ?? null,
-  }))
+
+  return (data ?? []).map((r: any) => {
+    let ratingSum = 0;
+    let ratingCount = 0;
+    let lastVisit = null;
+
+    if (r.visits) {
+      for (let i = 0; i < r.visits.length; i++) {
+        const v = r.visits[i];
+        if (v.rating_overall != null) {
+          ratingSum += v.rating_overall;
+          ratingCount++;
+        }
+        if (!lastVisit || v.visited_at > lastVisit) {
+          lastVisit = v.visited_at;
+        }
+      }
+    }
+
+    return {
+      ...r,
+      visit_count: r.visits?.length ?? 0,
+      avg_rating: ratingCount > 0 ? ratingSum / ratingCount : null,
+      last_visit: lastVisit,
+    };
+  })
 }
 
 export default async function RestaurantsPage() {
