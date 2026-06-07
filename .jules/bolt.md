@@ -1,0 +1,3 @@
+## 2024-06-07 - Supabase Payload Optimization & Array Iteration Consolidation
+**Learning:** In Next.js server components dealing with data aggregation, chained array methods (`reduce`, `filter`, `sort`) inside `.map()` iterations create redundant intermediate arrays and excessive allocation overhead. Furthermore, Supabase `.select('*')` is heavily overfetching unused fields on deep relationships.
+**Action:** Always specify exact fields in `.select()` (e.g. `select('id, name')`). To optimize JS execution during aggregation, consolidate chained `filter().reduce()` operations into a single standard `for` loop, eliminating intermediate allocations.
