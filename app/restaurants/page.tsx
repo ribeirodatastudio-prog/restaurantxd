@@ -13,14 +13,33 @@ async function getRestaurants() {
     `)
     .eq('wishlist', false)
     .order('name')
-  return (data ?? []).map((r: any) => ({
-    ...r,
-    visit_count: r.visits?.length ?? 0,
-    avg_rating: r.visits?.length
-      ? (r.visits.reduce((sum: number, v: any) => sum + (v.rating_overall ?? 0), 0) / r.visits.filter((v: any) => v.rating_overall).length || null)
-      : null,
-    last_visit: r.visits?.sort((a: any, b: any) => b.visited_at.localeCompare(a.visited_at))[0]?.visited_at ?? null,
-  }))
+  return (data ?? []).map((r: any) => {
+    let count_rating = 0
+    let sum_rating = 0
+    let last_visit = null
+
+    // ⚡ Bolt: Use a single O(N) pass to calculate avg rating and find the max date
+    // This avoids chaining .filter().reduce() and .sort()[0], reducing allocations and avoiding array mutation.
+    if (r.visits) {
+      for (let i = 0; i < r.visits.length; i++) {
+        const v = r.visits[i]
+        if (v.rating_overall) {
+          sum_rating += v.rating_overall
+          count_rating++
+        }
+        if (!last_visit || v.visited_at.localeCompare(last_visit) > 0) {
+          last_visit = v.visited_at
+        }
+      }
+    }
+
+    return {
+      ...r,
+      visit_count: r.visits?.length ?? 0,
+      avg_rating: count_rating > 0 ? sum_rating / count_rating : null,
+      last_visit
+    }
+  })
 }
 
 export default async function RestaurantsPage() {
