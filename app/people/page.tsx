@@ -11,13 +11,28 @@ async function getPeople() {
       visit_people(visit:visits(id, visited_at, restaurant:restaurants(name)))
     `)
     .order('name')
-  return (data ?? []).map((p: any) => ({
-    ...p,
-    visit_count: p.visit_people?.length ?? 0,
-    last_visit: p.visit_people?.sort((a: any, b: any) =>
-      b.visit?.visited_at?.localeCompare(a.visit?.visited_at)
-    )[0]?.visit ?? null,
-  }))
+  return (data ?? []).map((p: any) => {
+    let last_visit = null
+
+    // ⚡ Bolt: Use a single O(N) pass to find the latest visit
+    // This avoids .sort()[0], reducing O(N log N) overhead and avoiding array mutation.
+    if (p.visit_people) {
+      for (let i = 0; i < p.visit_people.length; i++) {
+        const v = p.visit_people[i].visit
+        if (v?.visited_at) {
+          if (!last_visit?.visited_at || v.visited_at.localeCompare(last_visit.visited_at) > 0) {
+            last_visit = v
+          }
+        }
+      }
+    }
+
+    return {
+      ...p,
+      visit_count: p.visit_people?.length ?? 0,
+      last_visit
+    }
+  })
 }
 
 export default async function PeoplePage() {
