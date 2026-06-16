@@ -119,12 +119,13 @@ export function NewVisitForm({ restaurants, people }: Props) {
       let finalRestaurantId = restaurantId
 
       if (isNewRestaurant) {
+        const parsedPrice = parseInt(newRestaurant.price_range);
         const { data, error } = await supabase.from('restaurants').insert({
-          name: newRestaurant.name,
+          name: (newRestaurant.name || '').trim().substring(0, 100),
           cuisine_type: newRestaurant.cuisine_type || null,
-          price_range: newRestaurant.price_range ? parseInt(newRestaurant.price_range) : null,
-          address: newRestaurant.address || null,
-          notes: newRestaurant.notes || null,
+          price_range: !isNaN(parsedPrice) ? parsedPrice : null,
+          address: (newRestaurant.address || '').trim().substring(0, 255) || null,
+          notes: (newRestaurant.notes || '').trim().substring(0, 1000) || null,
         }).select('id').single()
         if (error) throw error
         finalRestaurantId = data.id
@@ -138,7 +139,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
         rating_food: ratingFood,
         rating_service: ratingService,
         rating_ambience: ratingAmbience,
-        notes: notes || null,
+        notes: (notes || '').trim().substring(0, 1000) || null,
       }).select('id').single()
       if (visitError) throw visitError
 
@@ -149,13 +150,14 @@ export function NewVisitForm({ restaurants, people }: Props) {
       }
 
       for (const dish of dishes.filter(d => d.name.trim())) {
+        const parsedDishPrice = parseFloat(dish.price);
         const { data: dishData } = await supabase.from('dishes').insert({
           visit_id: visit.id,
-          name: dish.name,
+          name: (dish.name || '').trim().substring(0, 100),
           category: dish.category || null,
           rating: dish.rating,
           would_order_again: dish.would_order_again,
-          price: dish.price ? parseFloat(dish.price) : null,
+          price: !isNaN(parsedDishPrice) ? parsedDishPrice : null,
         }).select('id').single()
 
         if (dishData && dish.peopleIds.length > 0) {
