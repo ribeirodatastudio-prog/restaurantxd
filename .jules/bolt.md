@@ -1,0 +1,3 @@
+## 2024-08-01 - Optimizing Data Fetching and Aggregations
+**Learning:** Supabase queries can utilize `{ count: 'exact', head: true }` to fetch table counts without pulling unnecessary data, significantly minimizing payload size. Additionally, refactoring JavaScript array methods like `.filter()`, `.reduce()`, and `.forEach()` to single-pass `for` loops eliminates intermediate allocations and redundant array iterations during memory aggregation.
+**Action:** Always prefer `head: true` when you only need row counts, restrict `.select()` fields to only those needed, and use native `for` loops when compiling complex aggregations in Next.js backend.
