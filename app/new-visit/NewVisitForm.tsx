@@ -120,11 +120,11 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
       if (isNewRestaurant) {
         const { data, error } = await supabase.from('restaurants').insert({
-          name: newRestaurant.name,
+          name: newRestaurant.name.trim().substring(0, 100),
           cuisine_type: newRestaurant.cuisine_type || null,
-          price_range: newRestaurant.price_range ? parseInt(newRestaurant.price_range) : null,
-          address: newRestaurant.address || null,
-          notes: newRestaurant.notes || null,
+          price_range: newRestaurant.price_range ? parseInt(newRestaurant.price_range || '') : null,
+          address: newRestaurant.address ? newRestaurant.address.trim().substring(0, 200) : null,
+          notes: newRestaurant.notes ? newRestaurant.notes.trim().substring(0, 500) : null,
         }).select('id').single()
         if (error) throw error
         finalRestaurantId = data.id
@@ -138,38 +138,41 @@ export function NewVisitForm({ restaurants, people }: Props) {
         rating_food: ratingFood,
         rating_service: ratingService,
         rating_ambience: ratingAmbience,
-        notes: notes || null,
+        notes: notes ? notes.trim().substring(0, 1000) : null,
       }).select('id').single()
       if (visitError) throw visitError
 
       if (selectedPeople.length > 0) {
-        await supabase.from('visit_people').insert(
+        const { error: vpError } = await supabase.from('visit_people').insert(
           selectedPeople.map(pid => ({ visit_id: visit.id, person_id: pid }))
         )
+        if (vpError) throw vpError
       }
 
       for (const dish of dishes.filter(d => d.name.trim())) {
-        const { data: dishData } = await supabase.from('dishes').insert({
+        const { data: dishData, error: dishError } = await supabase.from('dishes').insert({
           visit_id: visit.id,
-          name: dish.name,
+          name: dish.name.trim().substring(0, 100),
           category: dish.category || null,
           rating: dish.rating,
           would_order_again: dish.would_order_again,
-          price: dish.price ? parseFloat(dish.price) : null,
+          price: dish.price ? parseFloat(dish.price || '') : null,
         }).select('id').single()
+        if (dishError) throw dishError
 
         if (dishData && dish.peopleIds.length > 0) {
-          await supabase.from('dish_people').insert(
+          const { error: dpError } = await supabase.from('dish_people').insert(
             dish.peopleIds.map(pid => ({ dish_id: dishData.id, person_id: pid }))
           )
+          if (dpError) throw dpError
         }
       }
 
       router.push('/')
       router.refresh()
     } catch (err) {
+      console.error('Generic message:', err)
       alert('Erro ao salvar. Verifique o console.')
-      console.error(err)
     } finally {
       setLoading(false)
     }
