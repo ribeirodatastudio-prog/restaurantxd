@@ -55,3 +55,31 @@ export function formatDate(d: string) {
     year: 'numeric',
   })
 }
+
+export function calculateVisitStats(visits: any[] | null | undefined) {
+  if (!visits || visits.length === 0) {
+    return { visit_count: 0, avg_rating: null, last_visit: null }
+  }
+
+  let ratingSum = 0
+  let ratedCount = 0
+  let latestVisit: string | null = null
+
+  for (const v of visits) {
+    if (v.rating_overall != null) {
+      ratingSum += v.rating_overall
+      ratedCount++
+    }
+    if (v.visited_at) {
+      if (!latestVisit || v.visited_at > latestVisit) {
+        latestVisit = v.visited_at
+      }
+    }
+  }
+
+  return {
+    visit_count: visits.length,
+    avg_rating: ratedCount > 0 ? ratingSum / ratedCount : null,
+    last_visit: latestVisit,
+  }
+}
