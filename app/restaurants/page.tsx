@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { priceLabel } from '@/lib/utils'
+import { priceLabel, calculateVisitStats } from '@/lib/utils'
 import Link from 'next/link'
 
 export const revalidate = 0
@@ -15,11 +15,7 @@ async function getRestaurants() {
     .order('name')
   return (data ?? []).map((r: any) => ({
     ...r,
-    visit_count: r.visits?.length ?? 0,
-    avg_rating: r.visits?.length
-      ? (r.visits.reduce((sum: number, v: any) => sum + (v.rating_overall ?? 0), 0) / r.visits.filter((v: any) => v.rating_overall).length || null)
-      : null,
-    last_visit: r.visits?.sort((a: any, b: any) => b.visited_at.localeCompare(a.visited_at))[0]?.visited_at ?? null,
+    ...calculateVisitStats(r.visits)
   }))
 }
 
