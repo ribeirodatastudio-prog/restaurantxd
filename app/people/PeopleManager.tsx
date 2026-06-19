@@ -14,12 +14,22 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   async function addPerson() {
     if (!name.trim()) return
     setLoading(true)
-    await supabase.from('people').insert({ name, notes: notes || null })
-    setLoading(false)
-    setAdding(false)
-    setName('')
-    setNotes('')
-    router.refresh()
+    try {
+      const { error } = await supabase.from('people').insert({
+        name: name.substring(0, 100),
+        notes: notes ? notes.substring(0, 1000) : null
+      })
+      if (error) throw error
+      setAdding(false)
+      setName('')
+      setNotes('')
+      router.refresh()
+    } catch (err) {
+      console.error('Erro ao adicionar pessoa:', err)
+      alert('Erro ao adicionar pessoa.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function removePerson(id: string) {
