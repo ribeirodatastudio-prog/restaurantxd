@@ -4,10 +4,15 @@ import { ratingColor } from '@/lib/utils'
 export const revalidate = 0
 
 async function getStats() {
-  const [{ data: visits }, { data: dishes }, { data: restaurants }] = await Promise.all([
-    supabase.from('visits').select('*, restaurant:restaurants(name, cuisine_type)'),
-    supabase.from('dishes').select('*'),
-    supabase.from('restaurants').select('id, name').eq('wishlist', false),
+  // Bolt Optimization: Optimize payload size by fetching only required fields and using exact count for restaurants.
+  const [
+    { data: visits },
+    { data: dishes },
+    { count: restaurantsCount }
+  ] = await Promise.all([
+    supabase.from('visits').select('id, visited_at, rating_overall, restaurant:restaurants(name, cuisine_type)'),
+    supabase.from('dishes').select('would_order_again'),
+    supabase.from('restaurants').select('id', { count: 'exact', head: true }).eq('wishlist', false),
   ])
 
   const v = visits ?? []
@@ -15,25 +20,36 @@ async function getStats() {
 
   const totalVisits = v.length
   const totalDishes = d.length
-  const totalRestaurants = restaurants?.length ?? 0
+  const totalRestaurants = restaurantsCount ?? 0
 
-  const rated = v.filter((x: any) => x.rating_overall)
-  const avgRating = rated.length
-    ? rated.reduce((s: number, x: any) => s + x.rating_overall, 0) / rated.length
-    : null
+  // Bolt Optimization: Replace chained array methods (filter, reduce, forEach) with single-pass loops
+  let sumRating = 0
+  let ratedCount = 0
+  const ratedVisits = []
+  const cuisineCount: Record<string, number> = {}
+
+  for (let i = 0; i < v.length; i++) {
+    const visit = v[i]
+    if (visit.rating_overall) {
+      sumRating += visit.rating_overall
+      ratedCount++
+      ratedVisits.push(visit)
+    }
+
+    const rel = visit.restaurant
+    const restaurantObj = Array.isArray(rel) ? rel[0] : rel
+    const c = restaurantObj?.cuisine_type ?? 'Outra'
+    cuisineCount[c] = (cuisineCount[c] ?? 0) + 1
+  }
+
+  const avgRating = ratedCount > 0 ? sumRating / ratedCount : null
 
   // Top rated visits
-  const topVisits = [...v]
-    .filter((x: any) => x.rating_overall)
+  const topVisits = ratedVisits
     .sort((a: any, b: any) => b.rating_overall - a.rating_overall)
     .slice(0, 5)
 
   // Culinária mais visitada
-  const cuisineCount: Record<string, number> = {}
-  v.forEach((x: any) => {
-    const c = x.restaurant?.cuisine_type ?? 'Outra'
-    cuisineCount[c] = (cuisineCount[c] ?? 0) + 1
-  })
   const topCuisines = Object.entries(cuisineCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
@@ -41,13 +57,14 @@ async function getStats() {
   // Pratos mais pedidos (quem pediria de novo)
   let wouldOrder = 0
   let wouldNotOrder = 0
-  d.forEach((x: any) => {
-    if (x.would_order_again) {
+  for (let i = 0; i < d.length; i++) {
+    const dish = d[i]
+    if (dish.would_order_again) {
       wouldOrder++
-    } else if (x.would_order_again === false) {
+    } else if (dish.would_order_again === false) {
       wouldNotOrder++
     }
-  })
+  }
 
   return { totalVisits, totalDishes, totalRestaurants, avgRating, topVisits, topCuisines, wouldOrder, wouldNotOrder }
 }
