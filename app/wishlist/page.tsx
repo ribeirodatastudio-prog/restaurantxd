@@ -5,9 +5,10 @@ import { WishlistActions } from './WishlistActions'
 export const revalidate = 0
 
 async function getWishlist() {
+  // Optimize Supabase query payload by selecting only explicitly rendered fields instead of select('*')
   const { data } = await supabase
     .from('restaurants')
-    .select('*')
+    .select('id, name, cuisine_type, price_range, address, notes')
     .eq('wishlist', true)
     .order('name')
   return data ?? []
