@@ -328,7 +328,8 @@ export function NewVisitForm({ restaurants, people }: Props) {
           <div className="flex flex-wrap gap-2">
             {people.map(p => (
               <button key={p.id} type="button"
-                className={`tag cursor-pointer transition-colors ${selectedPeople.includes(p.id) ? 'tag-accent' : ''}`}
+                aria-pressed={selectedPeople.includes(p.id)}
+                className={`tag cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:outline-none ${selectedPeople.includes(p.id) ? 'tag-accent' : ''}`}
                 style={{ padding: '6px 14px', fontSize: 13 }}
                 onClick={() => togglePerson(p.id, selectedPeople, setSelectedPeople)}>
                 {p.name}
@@ -364,10 +365,10 @@ export function NewVisitForm({ restaurants, people }: Props) {
                   onChange={e => { e.stopPropagation(); updateDish(i, 'name', e.target.value) }}
                   onClick={e => e.stopPropagation()}
                 />
-                <button type="button" aria-label={dishExpanded === i ? "Recolher detalhes do prato" : "Expandir detalhes do prato"} onClick={e => { e.stopPropagation(); setDishExpanded(dishExpanded === i ? null : i) }}>
+                <button type="button" aria-label={dishExpanded === i ? "Recolher detalhes do prato" : "Expandir detalhes do prato"} aria-expanded={dishExpanded === i} className="focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:outline-none rounded" onClick={e => { e.stopPropagation(); setDishExpanded(dishExpanded === i ? null : i) }}>
                   {dishExpanded === i ? <ChevronUp size={16} style={{ color: '#8a8278' }} /> : <ChevronDown size={16} style={{ color: '#8a8278' }} />}
                 </button>
-                <button type="button" aria-label="Remover prato" onClick={e => { e.stopPropagation(); removeDish(i) }}>
+                <button type="button" aria-label="Remover prato" className="focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:outline-none rounded" onClick={e => { e.stopPropagation(); removeDish(i) }}>
                   <X size={16} style={{ color: '#8a8278' }} />
                 </button>
               </div>
@@ -389,7 +390,8 @@ export function NewVisitForm({ restaurants, people }: Props) {
                     <span className="text-xs" style={{ color: '#8a8278', marginTop: 2 }}>Pediria de novo?</span>
                     {[true, false].map(v => (
                       <button key={String(v)} type="button"
-                        className={`tag cursor-pointer ${dish.would_order_again === v ? 'tag-accent' : ''}`}
+                        aria-pressed={dish.would_order_again === v}
+                        className={`tag cursor-pointer focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:outline-none ${dish.would_order_again === v ? 'tag-accent' : ''}`}
                         style={{ padding: '4px 12px', fontSize: 12 }}
                         onClick={() => updateDish(i, 'would_order_again', dish.would_order_again === v ? null : v)}>
                         {v ? 'Sim' : 'Não'}
@@ -403,7 +405,8 @@ export function NewVisitForm({ restaurants, people }: Props) {
                       <div className="flex flex-wrap gap-2">
                         {people.map(p => (
                           <button key={p.id} type="button"
-                            className={`tag cursor-pointer ${dish.peopleIds.includes(p.id) ? 'tag-accent' : ''}`}
+                            aria-pressed={dish.peopleIds.includes(p.id)}
+                            className={`tag cursor-pointer focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:outline-none ${dish.peopleIds.includes(p.id) ? 'tag-accent' : ''}`}
                             style={{ padding: '4px 12px', fontSize: 12 }}
                             onClick={() => updateDish(i, 'peopleIds',
                               dish.peopleIds.includes(p.id)
