@@ -1,0 +1,3 @@
+## 2025-02-12 - Database Count Optimization and Single-Pass Aggregation
+**Learning:** Performing a simple `select('*')` on all rows solely to determine their `.length` scales extremely poorly on the backend. Next.js server actions block UI until queries resolve.
+**Action:** When only the total number of records is needed (like the restaurants stat), always append `{ count: 'exact', head: true }` to avoid transferring massive payloads. Also, when aggregating multiple fields off fetched data arrays, condense `filter`/`reduce`/`forEach` chains into a single O(N) standard `for` loop to avoid intermediate memory allocations on the Node server.
