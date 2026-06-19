@@ -12,9 +12,13 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   const [loading, setLoading] = useState(false)
 
   async function addPerson() {
-    if (!name.trim()) return
+    const sanitizedName = name.trim().substring(0, 100)
+    if (!sanitizedName) return
     setLoading(true)
-    await supabase.from('people').insert({ name, notes: notes || null })
+    await supabase.from('people').insert({
+      name: sanitizedName,
+      notes: (notes || '').trim().substring(0, 1000) || null
+    })
     setLoading(false)
     setAdding(false)
     setName('')
