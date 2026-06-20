@@ -14,18 +14,34 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   async function addPerson() {
     if (!name.trim()) return
     setLoading(true)
-    await supabase.from('people').insert({ name, notes: notes || null })
-    setLoading(false)
-    setAdding(false)
-    setName('')
-    setNotes('')
-    router.refresh()
+    try {
+      const sanitizedName = name.substring(0, 100)
+      const sanitizedNotes = notes ? notes.substring(0, 100) : null
+      const { error } = await supabase.from('people').insert({ name: sanitizedName, notes: sanitizedNotes })
+      if (error) throw error
+
+      setAdding(false)
+      setName('')
+      setNotes('')
+      router.refresh()
+    } catch (error) {
+      alert('Ocorreu um erro ao adicionar a pessoa. Tente novamente mais tarde.')
+      console.error('Database error on insert person:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function removePerson(id: string) {
     if (!confirm('Remover pessoa? Isso vai desvinculá-la das visitas.')) return
-    await supabase.from('people').delete().eq('id', id)
-    router.refresh()
+    try {
+      const { error } = await supabase.from('people').delete().eq('id', id)
+      if (error) throw error
+      router.refresh()
+    } catch (error) {
+      alert('Ocorreu um erro ao remover a pessoa. Tente novamente mais tarde.')
+      console.error('Database error on delete person:', error)
+    }
   }
 
   return (
