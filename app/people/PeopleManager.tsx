@@ -42,8 +42,8 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
               <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
             </div>
             <div className="flex flex-col gap-2">
-              <input placeholder="Nome *" value={name} onChange={e => setName(e.target.value)} />
-              <input placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
+              <input autoFocus aria-label="Nome da pessoa" placeholder="Nome *" value={name} onChange={e => setName(e.target.value)} />
+              <input aria-label="Notas opcionais" placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
               <button className="btn btn-primary" onClick={addPerson} disabled={loading}>
                 {loading ? 'Salvando…' : 'Salvar'}
               </button>
