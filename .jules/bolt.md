@@ -1,0 +1,3 @@
+## 2024-05-02 - Array sorting side-effects causing O(N log N) bottlenecks
+**Learning:** Found an inline sorting function `r.visits?.sort((a: any, b: any) => b.visited_at.localeCompare(a.visited_at))` on data arrays used during component render (`app/restaurants/page.tsx`). Since `sort` mutates the array in-place, this could lead to rendering bugs or O(N log N) bottleneck on data mapping depending on data volume.
+**Action:** Extract list-processing computations into single O(N) pass helper functions and verify there are no accidental in-place mutations before extracting data into mapped objects.
