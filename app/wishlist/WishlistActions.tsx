@@ -36,18 +36,34 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   async function save() {
     if (!form.name.trim()) return
     setLoading(true)
-    await supabase.from('restaurants').insert({
-      name: form.name,
-      cuisine_type: form.cuisine_type || null,
-      price_range: form.price_range ? parseInt(form.price_range) : null,
-      address: form.address || null,
-      notes: form.notes || null,
-      wishlist: true,
-    })
-    setLoading(false)
-    setAdding(false)
-    setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
-    router.refresh()
+
+    // Sanitize and validate inputs for security limits
+    const safeName = form.name.trim().substring(0, 100)
+    const safeCuisine = form.cuisine_type ? form.cuisine_type.substring(0, 50) : null
+    const safeAddress = form.address ? form.address.trim().substring(0, 200) : null
+    const safeNotes = form.notes ? form.notes.trim().substring(0, 500) : null
+    const parsedPrice = parseInt(form.price_range || '')
+
+    try {
+      const { error } = await supabase.from('restaurants').insert({
+        name: safeName,
+        cuisine_type: safeCuisine,
+        price_range: isNaN(parsedPrice) ? null : parsedPrice,
+        address: safeAddress,
+        notes: safeNotes,
+        wishlist: true,
+      })
+      if (error) throw error
+
+      setAdding(false)
+      setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
+      router.refresh()
+    } catch (err) {
+      alert('Erro ao salvar. Tente novamente mais tarde.')
+      console.error('Generic message:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
