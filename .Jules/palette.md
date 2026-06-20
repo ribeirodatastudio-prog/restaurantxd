@@ -4,3 +4,6 @@
 ## 2025-02-18 - Fix Keyboard Accessibility & ARIA in StarRating
 **Learning:** The interactive half-star rating inputs in `components/StarRating.tsx` were structurally implemented using clickable `<span>` elements without ARIA labels or focus ring handling, making them completely inaccessible to keyboard and screen-reader users.
 **Action:** Use native interactive elements like `<button>` tags with proper `aria-label` definitions. Use existing design system styling classes (`focus-visible:ring-2` etc.) combined with React `onFocus`/`onBlur` event listeners to provide reliable, visually consistent focus states.
+## 2025-05-02 - Use Semantic Forms for Inline Inputs
+**Learning:** Inline input groupings using `<div>` and button `onClick` handlers do not support standard keyboard submission (pressing "Enter"). This breaks accessibility expectations and reduces usability.
+**Action:** Convert inline input wrappers to semantic `<form>` tags with `onSubmit` handlers. Always explicitly set `type="button"` on cancel or secondary buttons within the form to prevent accidental submissions, and use `autoFocus` and `required` attributes for better immediate feedback.

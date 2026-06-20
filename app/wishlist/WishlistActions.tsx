@@ -33,7 +33,8 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
     )
   }
 
-  async function save() {
+  async function save(e?: React.FormEvent) {
+    if (e) e.preventDefault()
     if (!form.name.trim()) return
     setLoading(true)
     await supabase.from('restaurants').insert({
@@ -51,13 +52,13 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   }
 
   return (
-    <div className="card mt-2">
+    <form className="card mt-2" onSubmit={save}>
       <div className="flex items-center justify-between mb-3">
         <span className="font-display" style={{ color: '#c9a96e' }}>Novo lugar</span>
-        <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
+        <button type="button" aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
       </div>
       <div className="flex flex-col gap-2">
-        <input placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+        <input autoFocus placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
         <div className="grid grid-cols-2 gap-2">
           <select value={form.cuisine_type} onChange={e => setForm({ ...form, cuisine_type: e.target.value })}>
             <option value="">Cozinha</option>
@@ -71,10 +72,10 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
         </div>
         <input placeholder="Endereço" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
         <textarea placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
-        <button className="btn btn-primary" onClick={save} disabled={loading}>
+        <button type="submit" className="btn btn-primary" disabled={loading || !form.name.trim()}>
           {loading ? 'Salvando…' : 'Salvar'}
         </button>
       </div>
-    </div>
+    </form>
   )
 }
