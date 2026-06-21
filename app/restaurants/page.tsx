@@ -8,19 +8,41 @@ async function getRestaurants() {
   const { data } = await supabase
     .from('restaurants')
     .select(`
-      *,
+      id, name, cuisine_type, price_range, address,
       visits(id, visited_at, rating_overall)
     `)
     .eq('wishlist', false)
     .order('name')
-  return (data ?? []).map((r: any) => ({
-    ...r,
-    visit_count: r.visits?.length ?? 0,
-    avg_rating: r.visits?.length
-      ? (r.visits.reduce((sum: number, v: any) => sum + (v.rating_overall ?? 0), 0) / r.visits.filter((v: any) => v.rating_overall).length || null)
-      : null,
-    last_visit: r.visits?.sort((a: any, b: any) => b.visited_at.localeCompare(a.visited_at))[0]?.visited_at ?? null,
-  }))
+
+  return (data ?? []).map((r: any) => {
+    let sumRating = 0;
+    let countRating = 0;
+    let lastVisit: string | null = null;
+
+    // Single pass to calculate averages and find the latest date
+    // This avoids O(N log N) sorting overhead and redundant iterations
+    if (r.visits && Array.isArray(r.visits)) {
+      for (let i = 0; i < r.visits.length; i++) {
+        const v = r.visits[i];
+        if (v.rating_overall != null) {
+          sumRating += v.rating_overall;
+          countRating++;
+        }
+        if (v.visited_at != null) {
+          if (!lastVisit || v.visited_at.localeCompare(lastVisit) > 0) {
+            lastVisit = v.visited_at;
+          }
+        }
+      }
+    }
+
+    return {
+      ...r,
+      visit_count: r.visits?.length ?? 0,
+      avg_rating: countRating > 0 ? sumRating / countRating : null,
+      last_visit: lastVisit,
+    };
+  })
 }
 
 export default async function RestaurantsPage() {
