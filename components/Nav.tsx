@@ -26,7 +26,8 @@ export function Nav() {
               <Link
                 key={href}
                 href={href}
-                className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[11px] transition-colors"
+                aria-current={active ? 'page' : undefined}
+                className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e]"
                 style={{
                   color: active ? '#c9a96e' : '#8a8278',
                   background: active ? 'rgba(201,169,110,0.1)' : 'transparent',
