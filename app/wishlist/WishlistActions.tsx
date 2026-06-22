@@ -17,8 +17,14 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
         className="btn btn-ghost text-xs"
         title="Marcar como visitado (remove da wishlist)"
         onClick={async () => {
-          await supabase.from('restaurants').update({ wishlist: false }).eq('id', restaurantId)
-          router.refresh()
+          try {
+            const { error } = await supabase.from('restaurants').update({ wishlist: false }).eq('id', restaurantId)
+            if (error) throw error
+            router.refresh()
+          } catch (err) {
+            console.error('Erro ao atualizar restaurante:', err)
+            alert('Não foi possível marcar como visitado no momento. Tente novamente.')
+          }
         }}>
         <CheckCheck size={14} /> Visitei
       </button>
@@ -34,20 +40,58 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
   }
 
   async function save() {
-    if (!form.name.trim()) return
+    const sanitizedName = form.name.trim()
+    if (!sanitizedName) return
+
+    if (sanitizedName.length > 100) {
+      alert('O nome deve ter no máximo 100 caracteres.')
+      return
+    }
+
+    const sanitizedAddress = form.address.trim()
+    if (sanitizedAddress.length > 255) {
+      alert('O endereço deve ter no máximo 255 caracteres.')
+      return
+    }
+
+    const sanitizedNotes = form.notes.trim()
+    if (sanitizedNotes.length > 1000) {
+      alert('As notas devem ter no máximo 1000 caracteres.')
+      return
+    }
+
+    let parsedPriceRange = null
+    if (form.price_range) {
+      const parsed = parseInt(form.price_range, 10)
+      if (isNaN(parsed) || parsed < 1 || parsed > 4) {
+        alert('Faixa de preço inválida.')
+        return
+      }
+      parsedPriceRange = parsed
+    }
+
     setLoading(true)
-    await supabase.from('restaurants').insert({
-      name: form.name,
-      cuisine_type: form.cuisine_type || null,
-      price_range: form.price_range ? parseInt(form.price_range) : null,
-      address: form.address || null,
-      notes: form.notes || null,
-      wishlist: true,
-    })
-    setLoading(false)
-    setAdding(false)
-    setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
-    router.refresh()
+    try {
+      const { error } = await supabase.from('restaurants').insert({
+        name: sanitizedName,
+        cuisine_type: form.cuisine_type || null,
+        price_range: parsedPriceRange,
+        address: sanitizedAddress || null,
+        notes: sanitizedNotes || null,
+        wishlist: true,
+      })
+
+      if (error) throw error
+
+      setAdding(false)
+      setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
+      router.refresh()
+    } catch (err) {
+      console.error('Erro ao salvar restaurante:', err)
+      alert('Não foi possível salvar o restaurante no momento. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
