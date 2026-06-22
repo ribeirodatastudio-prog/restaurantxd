@@ -4,3 +4,6 @@
 ## 2025-02-18 - Fix Keyboard Accessibility & ARIA in StarRating
 **Learning:** The interactive half-star rating inputs in `components/StarRating.tsx` were structurally implemented using clickable `<span>` elements without ARIA labels or focus ring handling, making them completely inaccessible to keyboard and screen-reader users.
 **Action:** Use native interactive elements like `<button>` tags with proper `aria-label` definitions. Use existing design system styling classes (`focus-visible:ring-2` etc.) combined with React `onFocus`/`onBlur` event listeners to provide reliable, visually consistent focus states.
+## 2024-05-24 - ARIA States on Custom Interactive Elements
+**Learning:** Custom interactive elements like tag-style toggle buttons or custom disclosure buttons lack native semantic state representation.
+**Action:** Always add `aria-pressed` for toggle buttons and `aria-expanded` for disclosure widgets to programmatically convey their visual state to assistive technologies.
