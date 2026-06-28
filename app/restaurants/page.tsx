@@ -8,19 +8,40 @@ async function getRestaurants() {
   const { data } = await supabase
     .from('restaurants')
     .select(`
-      *,
+      id, name, cuisine_type, price_range, address,
       visits(id, visited_at, rating_overall)
     `)
     .eq('wishlist', false)
     .order('name')
-  return (data ?? []).map((r: any) => ({
-    ...r,
-    visit_count: r.visits?.length ?? 0,
-    avg_rating: r.visits?.length
-      ? (r.visits.reduce((sum: number, v: any) => sum + (v.rating_overall ?? 0), 0) / r.visits.filter((v: any) => v.rating_overall).length || null)
-      : null,
-    last_visit: r.visits?.sort((a: any, b: any) => b.visited_at.localeCompare(a.visited_at))[0]?.visited_at ?? null,
-  }))
+
+  return (data ?? []).map((r: any) => {
+    let visit_count = 0
+    let rating_sum = 0
+    let rated_count = 0
+    let last_visit: string | null = null
+
+    if (r.visits) {
+      visit_count = r.visits.length
+      for (const v of r.visits) {
+        if (v.rating_overall) {
+          rating_sum += v.rating_overall
+          rated_count++
+        }
+        if (v.visited_at) {
+          if (!last_visit || v.visited_at.localeCompare(last_visit) > 0) {
+            last_visit = v.visited_at
+          }
+        }
+      }
+    }
+
+    return {
+      ...r,
+      visit_count,
+      avg_rating: rated_count > 0 ? rating_sum / rated_count : null,
+      last_visit,
+    }
+  })
 }
 
 export default async function RestaurantsPage() {
