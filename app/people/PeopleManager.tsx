@@ -14,18 +14,34 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
   async function addPerson() {
     if (!name.trim()) return
     setLoading(true)
-    await supabase.from('people').insert({ name, notes: notes || null })
-    setLoading(false)
-    setAdding(false)
-    setName('')
-    setNotes('')
-    router.refresh()
+    try {
+      const safeName = name.substring(0, 100)
+      const safeNotes = notes ? notes.substring(0, 500) : null
+      const { error } = await supabase.from('people').insert({ name: safeName, notes: safeNotes })
+      if (error) throw error
+
+      setAdding(false)
+      setName('')
+      setNotes('')
+      router.refresh()
+    } catch (err) {
+      alert('Erro ao salvar. Verifique o console.')
+      console.error('Erro genérico:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function removePerson(id: string) {
     if (!confirm('Remover pessoa? Isso vai desvinculá-la das visitas.')) return
-    await supabase.from('people').delete().eq('id', id)
-    router.refresh()
+    try {
+      const { error } = await supabase.from('people').delete().eq('id', id)
+      if (error) throw error
+      router.refresh()
+    } catch (err) {
+      alert('Erro ao excluir. Verifique o console.')
+      console.error('Erro genérico:', err)
+    }
   }
 
   return (
