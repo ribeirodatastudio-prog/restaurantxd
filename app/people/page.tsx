@@ -11,13 +11,23 @@ async function getPeople() {
       visit_people(visit:visits(id, visited_at, restaurant:restaurants(name)))
     `)
     .order('name')
-  return (data ?? []).map((p: any) => ({
-    ...p,
-    visit_count: p.visit_people?.length ?? 0,
-    last_visit: p.visit_people?.sort((a: any, b: any) =>
-      b.visit?.visited_at?.localeCompare(a.visit?.visited_at)
-    )[0]?.visit ?? null,
-  }))
+  return (data ?? []).map((p: any) => {
+    let maxVisit = null;
+    if (p.visit_people) {
+      for (const vp of p.visit_people) {
+        if (vp.visit?.visited_at) {
+          if (!maxVisit || vp.visit.visited_at.localeCompare(maxVisit.visited_at) > 0) {
+            maxVisit = vp.visit;
+          }
+        }
+      }
+    }
+    return {
+      ...p,
+      visit_count: p.visit_people?.length ?? 0,
+      last_visit: maxVisit,
+    };
+  })
 }
 
 export default async function PeoplePage() {
