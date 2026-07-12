@@ -212,6 +212,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
               <div className="flex flex-col gap-2 relative">
                 <input
                   type="text"
+                  aria-label="Buscar restaurante"
                   placeholder="Buscar restaurante…"
                   value={restaurantSearchQuery}
                   onChange={e => setRestaurantSearchQuery(e.target.value)}
@@ -246,7 +247,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
         ) : (
           <div className="flex flex-col gap-3">
             <div className="relative">
-              <input placeholder="Nome do restaurante *" required={isNewRestaurant}
+              <input placeholder="Nome do restaurante *" aria-label="Nome do restaurante" required={isNewRestaurant}
                 value={newRestaurant.name} onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
 
               {similarRestaurants.length > 0 && (
@@ -272,11 +273,11 @@ export function NewVisitForm({ restaurants, people }: Props) {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <select value={newRestaurant.cuisine_type} onChange={e => setNewRestaurant({ ...newRestaurant, cuisine_type: e.target.value })}>
+              <select aria-label="Tipo de cozinha" value={newRestaurant.cuisine_type} onChange={e => setNewRestaurant({ ...newRestaurant, cuisine_type: e.target.value })}>
                 <option value="">Tipo de cozinha</option>
                 {CUISINE_TYPES.map(c => <option key={c}>{c}</option>)}
               </select>
-              <select value={newRestaurant.price_range} onChange={e => setNewRestaurant({ ...newRestaurant, price_range: e.target.value })}>
+              <select aria-label="Faixa de preço" value={newRestaurant.price_range} onChange={e => setNewRestaurant({ ...newRestaurant, price_range: e.target.value })}>
                 <option value="">Faixa de preço</option>
                 <option value="1">R$ — Barato</option>
                 <option value="2">R$R$ — Moderado</option>
@@ -284,9 +285,9 @@ export function NewVisitForm({ restaurants, people }: Props) {
                 <option value="4">R$R$R$R$ — Muito caro</option>
               </select>
             </div>
-            <input placeholder="Endereço (opcional)"
+            <input placeholder="Endereço (opcional)" aria-label="Endereço (opcional)"
               value={newRestaurant.address} onChange={e => setNewRestaurant({ ...newRestaurant, address: e.target.value })} />
-            <textarea placeholder="Observações sobre o lugar (opcional)" rows={2}
+            <textarea placeholder="Observações sobre o lugar (opcional)" aria-label="Observações sobre o lugar (opcional)" rows={2}
               value={newRestaurant.notes} onChange={e => setNewRestaurant({ ...newRestaurant, notes: e.target.value })} />
           </div>
         )}
@@ -297,18 +298,18 @@ export function NewVisitForm({ restaurants, people }: Props) {
         <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Detalhes</h2>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Data</label>
-            <input type="date" value={visitedAt} onChange={e => setVisitedAt(e.target.value)} required />
+            <label htmlFor="visited_at" className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Data</label>
+            <input id="visited_at" type="date" value={visitedAt} onChange={e => setVisitedAt(e.target.value)} required />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Ocasião</label>
-            <select value={occasion} onChange={e => setOccasion(e.target.value)}>
+            <label htmlFor="occasion" className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Ocasião</label>
+            <select id="occasion" value={occasion} onChange={e => setOccasion(e.target.value)}>
               <option value="">Sem ocasião</option>
               {OCCASIONS.map(o => <option key={o}>{o}</option>)}
             </select>
           </div>
         </div>
-        <textarea placeholder="Anotações sobre a visita…" rows={3}
+        <textarea placeholder="Anotações sobre a visita…" aria-label="Anotações sobre a visita" rows={3}
           value={notes} onChange={e => setNotes(e.target.value)} />
       </div>
 
@@ -367,6 +368,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
                   className="flex-1"
                   style={{ border: 'none', background: 'transparent', padding: 0 }}
                   placeholder="Nome do prato *"
+                  aria-label="Nome do prato"
                   value={dish.name}
                   onChange={e => { e.stopPropagation(); updateDish(i, 'name', e.target.value) }}
                   onClick={e => e.stopPropagation()}
@@ -382,11 +384,11 @@ export function NewVisitForm({ restaurants, people }: Props) {
               {dishExpanded === i && (
                 <div className="px-3 pb-3 flex flex-col gap-3" style={{ borderTop: '1px solid #2a2622' }}>
                   <div className="grid grid-cols-2 gap-3 pt-3">
-                    <select value={dish.category} onChange={e => updateDish(i, 'category', e.target.value)}>
+                    <select aria-label="Categoria do prato" value={dish.category} onChange={e => updateDish(i, 'category', e.target.value)}>
                       <option value="">Categoria</option>
                       {DISH_CATEGORIES.map(c => <option key={c}>{c}</option>)}
                     </select>
-                    <input type="number" step="0.01" placeholder="Preço (R$)"
+                    <input type="number" step="0.01" placeholder="Preço (R$)" aria-label="Preço do prato"
                       value={dish.price} onChange={e => updateDish(i, 'price', e.target.value)} />
                   </div>
 
