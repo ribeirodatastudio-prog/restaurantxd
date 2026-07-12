@@ -17,23 +17,32 @@ async function getStats() {
   const totalDishes = d.length
   const totalRestaurants = restaurants?.length ?? 0
 
-  const rated = v.filter((x: any) => x.rating_overall)
-  const avgRating = rated.length
-    ? rated.reduce((s: number, x: any) => s + x.rating_overall, 0) / rated.length
-    : null
+  // ⚡ Bolt: Optimize data aggregation using single-pass for loops to avoid intermediate arrays from filter/map/reduce
+  let ratingSum = 0
+  let ratingCount = 0
+  const cuisineCount: Record<string, number> = {}
+  const ratedVisits: any[] = []
+
+  for (let i = 0; i < v.length; i++) {
+    const x = v[i]
+    if (x.rating_overall) {
+      ratingSum += x.rating_overall
+      ratingCount++
+      ratedVisits.push(x)
+    }
+
+    const c = x.restaurant?.cuisine_type ?? 'Outra'
+    cuisineCount[c] = (cuisineCount[c] ?? 0) + 1
+  }
+
+  const avgRating = ratingCount > 0 ? ratingSum / ratingCount : null
 
   // Top rated visits
-  const topVisits = [...v]
-    .filter((x: any) => x.rating_overall)
+  const topVisits = ratedVisits
     .sort((a: any, b: any) => b.rating_overall - a.rating_overall)
     .slice(0, 5)
 
   // Culinária mais visitada
-  const cuisineCount: Record<string, number> = {}
-  v.forEach((x: any) => {
-    const c = x.restaurant?.cuisine_type ?? 'Outra'
-    cuisineCount[c] = (cuisineCount[c] ?? 0) + 1
-  })
   const topCuisines = Object.entries(cuisineCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
@@ -41,13 +50,14 @@ async function getStats() {
   // Pratos mais pedidos (quem pediria de novo)
   let wouldOrder = 0
   let wouldNotOrder = 0
-  d.forEach((x: any) => {
+  for (let i = 0; i < d.length; i++) {
+    const x = d[i]
     if (x.would_order_again) {
       wouldOrder++
     } else if (x.would_order_again === false) {
       wouldNotOrder++
     }
-  })
+  }
 
   return { totalVisits, totalDishes, totalRestaurants, avgRating, topVisits, topCuisines, wouldOrder, wouldNotOrder }
 }
