@@ -90,16 +90,26 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
   // Calculate Overall Rating automatically
   useEffect(() => {
-    const ratings = [ratingFood, ratingService, ratingAmbience].filter(r => r !== null) as number[]
-    if (ratings.length > 0) {
-      const sum = ratings.reduce((acc, r) => acc + r, 0)
+    let totalWeight = 0
+    let weightedSum = 0
 
-      // Round to nearest 0.5 for the overall star rating visualization,
-      // or we can just let it be exact and the Star component will round down to the nearest 0.5.
-      // E.g. Math.round((sum / ratings.length) * 2) / 2
-      let avg = sum / ratings.length
+    if (ratingFood !== null) {
+      weightedSum += ratingFood * 3
+      totalWeight += 3
+    }
+    if (ratingService !== null) {
+      weightedSum += ratingService * 1
+      totalWeight += 1
+    }
+    if (ratingAmbience !== null) {
+      weightedSum += ratingAmbience * 1
+      totalWeight += 1
+    }
+
+    if (totalWeight > 0) {
+      let avg = weightedSum / totalWeight
+      // Round to nearest 0.5 for the overall star rating visualization
       avg = Math.round(avg * 2) / 2
-
       setRatingOverall(avg)
     } else {
       setRatingOverall(null)
