@@ -29,6 +29,8 @@ export function NewVisitForm({ restaurants, people }: Props) {
   const [newRestaurant, setNewRestaurant] = useState({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
   const [isNewRestaurant, setIsNewRestaurant] = useState(false)
   const [restaurantSearchQuery, setRestaurantSearchQuery] = useState('')
+  const [isCustomCuisine, setIsCustomCuisine] = useState(false)
+  const [customCuisine, setCustomCuisine] = useState('')
 
   // Derived state for existing restaurants
   const filteredRestaurants = restaurants.filter(r =>
@@ -37,6 +39,11 @@ export function NewVisitForm({ restaurants, people }: Props) {
   )
 
   const selectedRestaurantObj = restaurants.find(r => r.id === restaurantId)
+
+  const allCuisineTypes = Array.from(new Set([
+    ...CUISINE_TYPES,
+    ...restaurants.map(r => r.cuisine_type).filter((c): c is string => Boolean(c))
+  ])).sort()
 
   // Derived state for new restaurant similar matches
   const similarRestaurants = newRestaurant.name.trim().length > 2
@@ -53,7 +60,34 @@ export function NewVisitForm({ restaurants, people }: Props) {
   const [ratingAmbience, setRatingAmbience] = useState<number | null>(null)
 
   // Pessoas
+  const [localPeople, setLocalPeople] = useState(people)
   const [selectedPeople, setSelectedPeople] = useState<string[]>([])
+  const [isAddingPerson, setIsAddingPerson] = useState(false)
+  const [newPersonName, setNewPersonName] = useState('')
+
+  async function handleAddPerson() {
+    if (!newPersonName.trim()) {
+      setIsAddingPerson(false)
+      return
+    }
+    setLoading(true)
+    try {
+      const { data, error } = await supabase.from('people').insert({
+        name: newPersonName.substring(0, 100),
+      }).select('id, name').single()
+      if (error) throw error
+
+      setLocalPeople([...localPeople, { id: data.id, name: data.name }])
+      setSelectedPeople([...selectedPeople, data.id])
+      setNewPersonName('')
+      setIsAddingPerson(false)
+    } catch (err) {
+      alert('Erro ao adicionar pessoa. Verifique o console.')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Pratos
   const [dishes, setDishes] = useState<DishEntry[]>([])
@@ -129,11 +163,12 @@ export function NewVisitForm({ restaurants, people }: Props) {
       let finalRestaurantId = restaurantId
 
       if (isNewRestaurant) {
+        const finalCuisine = isCustomCuisine ? customCuisine : newRestaurant.cuisine_type
         const parsedPrice = newRestaurant.price_range ? parseInt(newRestaurant.price_range || '') : null
         const safePrice = !Number.isNaN(parsedPrice) ? parsedPrice : null
         const { data, error } = await supabase.from('restaurants').insert({
           name: newRestaurant.name.substring(0, 100),
-          cuisine_type: newRestaurant.cuisine_type || null,
+          cuisine_type: finalCuisine || null,
           price_range: safePrice,
           address: newRestaurant.address ? newRestaurant.address.substring(0, 200) : null,
           notes: newRestaurant.notes ? newRestaurant.notes.substring(0, 500) : null,
@@ -282,10 +317,31 @@ export function NewVisitForm({ restaurants, people }: Props) {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <select value={newRestaurant.cuisine_type} onChange={e => setNewRestaurant({ ...newRestaurant, cuisine_type: e.target.value })}>
-                <option value="">Tipo de cozinha</option>
-                {CUISINE_TYPES.map(c => <option key={c}>{c}</option>)}
-              </select>
+              <div className="flex flex-col gap-2">
+                <select
+                  value={isCustomCuisine ? "custom" : newRestaurant.cuisine_type}
+                  onChange={e => {
+                    if (e.target.value === 'custom') {
+                      setIsCustomCuisine(true)
+                      setNewRestaurant({ ...newRestaurant, cuisine_type: '' })
+                    } else {
+                      setIsCustomCuisine(false)
+                      setNewRestaurant({ ...newRestaurant, cuisine_type: e.target.value })
+                    }
+                  }}
+                >
+                  <option value="">Tipo de cozinha</option>
+                  {allCuisineTypes.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="custom">Outra (adicionar)</option>
+                </select>
+                {isCustomCuisine && (
+                  <input
+                    placeholder="Digite o tipo de cozinha"
+                    value={customCuisine}
+                    onChange={e => setCustomCuisine(e.target.value)}
+                  />
+                )}
+              </div>
               <select value={newRestaurant.price_range} onChange={e => setNewRestaurant({ ...newRestaurant, price_range: e.target.value })}>
                 <option value="">Faixa de preço</option>
                 <option value="1">R$ — Barato</option>
@@ -339,21 +395,40 @@ export function NewVisitForm({ restaurants, people }: Props) {
       </div>
 
       {/* Pessoas */}
-      {people.length > 0 && (
-        <div className="card">
-          <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Quem foi</h2>
-          <div className="flex flex-wrap gap-2">
-            {people.map(p => (
-              <button key={p.id} type="button"
-                className={`tag cursor-pointer transition-colors ${selectedPeople.includes(p.id) ? 'tag-accent' : ''}`}
-                style={{ padding: '6px 14px', fontSize: 13 }}
-                onClick={() => togglePerson(p.id, selectedPeople, setSelectedPeople)}>
-                {p.name}
-              </button>
-            ))}
-          </div>
+      <div className="card">
+        <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Quem foi</h2>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {localPeople.map(p => (
+            <button key={p.id} type="button"
+              className={`tag cursor-pointer transition-colors ${selectedPeople.includes(p.id) ? 'tag-accent' : ''}`}
+              style={{ padding: '6px 14px', fontSize: 13 }}
+              onClick={() => togglePerson(p.id, selectedPeople, setSelectedPeople)}>
+              {p.name}
+            </button>
+          ))}
         </div>
-      )}
+        {isAddingPerson ? (
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Nome da pessoa"
+              value={newPersonName}
+              onChange={e => setNewPersonName(e.target.value)}
+              className="flex-1"
+            />
+            <button type="button" className="btn btn-primary" onClick={handleAddPerson} disabled={loading}>
+              Salvar
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => setIsAddingPerson(false)} disabled={loading}>
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="btn btn-ghost text-sm" onClick={() => setIsAddingPerson(true)}>
+            <Plus size={15} /> Adicionar pessoa
+          </button>
+        )}
+      </div>
 
       {/* Pratos */}
       <div className="card">
@@ -418,7 +493,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
                     <div>
                       <div className="text-xs mb-2" style={{ color: '#8a8278' }}>Quem pediu</div>
                       <div className="flex flex-wrap gap-2">
-                        {people.map(p => (
+                        {localPeople.map(p => (
                           <button key={p.id} type="button"
                             className={`tag cursor-pointer ${dish.peopleIds.includes(p.id) ? 'tag-accent' : ''}`}
                             style={{ padding: '4px 12px', fontSize: 12 }}
