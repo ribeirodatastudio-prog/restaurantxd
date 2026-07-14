@@ -10,6 +10,7 @@ async function getVisits() {
     .from('visits')
     .select(`
       *,
+      rating_food,
       restaurant:restaurants(id, name, cuisine_type, price_range),
       people:visit_people(person:people(id, name)),
       dishes(id, name, category, rating)
@@ -81,12 +82,24 @@ export default async function HomePage() {
                 )}
               </div>
 
-              {visit.rating_overall && (
-                <div className="text-right shrink-0">
-                  <div className="font-display text-2xl" style={{ color: '#c9a96e' }}>
-                    {visit.rating_overall}
-                  </div>
-                  <div className="text-xs" style={{ color: '#8a8278' }}>geral</div>
+              {(visit.rating_overall || visit.rating_food) && (
+                <div className="text-right shrink-0 flex flex-col items-end">
+                  {visit.rating_overall && (
+                    <>
+                      <div className="font-display text-2xl" style={{ color: '#c9a96e' }}>
+                        {visit.rating_overall}
+                      </div>
+                      <div className="text-xs" style={{ color: '#8a8278' }}>geral</div>
+                    </>
+                  )}
+                  {visit.rating_food && (
+                    <div className="mt-2">
+                      <div className="font-display text-lg" style={{ color: '#f0ece4' }}>
+                        {visit.rating_food}
+                      </div>
+                      <div className="text-xs" style={{ color: '#8a8278' }}>comida</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
