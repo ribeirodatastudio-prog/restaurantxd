@@ -1,47 +1,40 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useState, useTransition } from 'react'
 import { Plus, X } from 'lucide-react'
+import { addPerson, deletePerson } from '@/app/actions'
+import type { PersonSummary } from '@/types'
 
-export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
-  const router = useRouter()
+export function PeopleManager({ people }: { people: PersonSummary[] }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [notes, setNotes] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [pending, startTransition] = useTransition()
 
-  async function addPerson() {
+  function save() {
     if (!name.trim()) return
-    setLoading(true)
-    try {
-      const safeName = name.substring(0, 100)
-      const safeNotes = notes ? notes.substring(0, 500) : null
-      const { error } = await supabase.from('people').insert({ name: safeName, notes: safeNotes })
-      if (error) throw error
-
-      setAdding(false)
-      setName('')
-      setNotes('')
-      router.refresh()
-    } catch (err) {
-      alert('Erro ao salvar. Verifique o console.')
-      console.error('Erro genérico:', err)
-    } finally {
-      setLoading(false)
-    }
+    startTransition(async () => {
+      try {
+        await addPerson(name, notes || null)
+        setAdding(false)
+        setName('')
+        setNotes('')
+      } catch (err) {
+        console.error(err)
+        alert('Erro ao salvar.')
+      }
+    })
   }
 
-  async function removePerson(id: string) {
+  function remove(id: string) {
     if (!confirm('Remover pessoa? Isso vai desvinculá-la das visitas.')) return
-    try {
-      const { error } = await supabase.from('people').delete().eq('id', id)
-      if (error) throw error
-      router.refresh()
-    } catch (err) {
-      alert('Erro ao excluir. Verifique o console.')
-      console.error('Erro genérico:', err)
-    }
+    startTransition(async () => {
+      try {
+        await deletePerson(id)
+      } catch (err) {
+        console.error(err)
+        alert('Erro ao excluir.')
+      }
+    })
   }
 
   return (
@@ -54,14 +47,14 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
         ) : (
           <div className="card w-full">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-display" style={{ color: '#c9a96e' }}>Nova pessoa</span>
-              <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
+              <span className="font-display text-accent">Nova pessoa</span>
+              <button aria-label="Cancelar" className="text-muted" onClick={() => setAdding(false)}><X size={16} /></button>
             </div>
             <div className="flex flex-col gap-2">
               <input placeholder="Nome *" value={name} onChange={e => setName(e.target.value)} />
               <input placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
-              <button className="btn btn-primary" onClick={addPerson} disabled={loading}>
-                {loading ? 'Salvando…' : 'Salvar'}
+              <button className="btn btn-primary" onClick={save} disabled={pending}>
+                {pending ? 'Salvando…' : 'Salvar'}
               </button>
             </div>
           </div>
@@ -69,24 +62,24 @@ export function PeopleManager({ initialPeople }: { initialPeople: any[] }) {
       </div>
 
       <div className="flex flex-col gap-3">
-        {initialPeople.map((p: any) => (
+        {people.map(p => (
           <div key={p.id} className="card flex items-start justify-between gap-3">
             <div>
               <div className="font-display text-lg">{p.name}</div>
-              <div className="text-sm mt-0.5" style={{ color: '#8a8278' }}>
+              <div className="text-sm mt-0.5 text-muted">
                 {p.visit_count} visita{p.visit_count !== 1 ? 's' : ''}
-                {p.last_visit && ` · última: ${p.last_visit.restaurant?.name}`}
+                {p.last_restaurant && ` · última: ${p.last_restaurant}`}
               </div>
-              {p.notes && <div className="text-xs mt-1" style={{ color: '#8a8278' }}>{p.notes}</div>}
+              {p.notes && <div className="text-xs mt-1 text-muted">{p.notes}</div>}
             </div>
-            <button aria-label="Remover pessoa" className="btn-danger btn text-xs" onClick={() => removePerson(p.id)}>
+            <button aria-label="Remover pessoa" className="btn-danger btn text-xs" disabled={pending} onClick={() => remove(p.id)}>
               <X size={13} />
             </button>
           </div>
         ))}
 
-        {initialPeople.length === 0 && (
-          <div className="card text-center py-10" style={{ color: '#8a8278' }}>
+        {people.length === 0 && (
+          <div className="card text-center py-10 text-muted">
             <p>Nenhuma pessoa cadastrada ainda.</p>
           </div>
         )}

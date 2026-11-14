@@ -16,7 +16,7 @@ export const DISH_CATEGORIES = [
   'Outro',
 ] as const
 
-export const CUISINE_TYPES = [
+export const CUISINE_TYPES: string[] = [
   'Brasileira',
   'Italiana',
   'Japonesa',
@@ -34,7 +34,7 @@ export const CUISINE_TYPES = [
   'Outra',
 ]
 
-export const RATING_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+export const RATING_OPTIONS: number[] = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 
 export function priceLabel(range: number | null) {
   if (!range) return '—'
@@ -54,4 +54,15 @@ export function formatDate(d: string) {
     month: 'short',
     year: 'numeric',
   })
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function isUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_RE.test(value)
+}
+
+/** Remove acentos e caixa, para buscas: "cafe" encontra "Café" */
+export function normalizeText(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 }
