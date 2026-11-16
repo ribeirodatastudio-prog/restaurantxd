@@ -13,17 +13,10 @@ function Star({ fill }: { fill: 'empty' | 'half' | 'full' }) {
   return (
     <span style={{ position: 'relative', display: 'inline-block', width: 22, height: 22, fontSize: 22, lineHeight: 1 }}>
       {/* Fundo vazio */}
-      <span style={{ color: '#3a3630' }}>★</span>
+      <span className="text-line-strong">★</span>
       {/* Preenchimento dourado por cima, clipado */}
       {fill !== 'empty' && (
-        <span style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          color: '#c9a96e',
-          overflow: 'hidden',
-          width: fill === 'half' ? '50%' : '100%',
-        }}>★</span>
+        <span className="text-accent" style={{ position: 'absolute', top: 0, left: 0, overflow: 'hidden', width: fill === 'half' ? '50%' : '100%' }}>★</span>
       )}
     </span>
   )
@@ -46,7 +39,7 @@ export function StarRating({ value, onChange, label, readonly = false }: StarRat
 
   return (
     <div>
-      {label && <div className="text-xs mb-1" style={{ color: '#8a8278' }}>{label}</div>}
+      {label && <div className="text-xs mb-1 text-muted">{label}</div>}
       <div className={`flex items-center gap-0.5 ${readonly ? 'opacity-80' : ''}`}>
         {[1, 2, 3, 4, 5].map((star) => (
           <span key={star} style={{ position: 'relative', display: 'inline-block', cursor: readonly ? 'default' : 'pointer' }}>
@@ -56,8 +49,7 @@ export function StarRating({ value, onChange, label, readonly = false }: StarRat
                 <button
                   type="button"
                   aria-label={`Avaliar com ${star - 0.5} estrelas`}
-                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1815] rounded-sm z-10 relative"
-                  style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', zIndex: 1, appearance: 'none', background: 'transparent', border: 'none', padding: 0 }}
+                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface rounded-sm z-10 relative bg-transparent" style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', zIndex: 1, appearance: 'none', border: 'none', padding: 0 }}
                   onMouseEnter={() => setHover(star - 0.5)}
                   onMouseLeave={() => setHover(null)}
                   onFocus={() => setHover(star - 0.5)}
@@ -68,8 +60,7 @@ export function StarRating({ value, onChange, label, readonly = false }: StarRat
                 <button
                   type="button"
                   aria-label={`Avaliar com ${star} estrelas`}
-                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-1 focus-visible:ring-offset-[#1a1815] rounded-sm z-10 relative"
-                  style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', zIndex: 1, appearance: 'none', background: 'transparent', border: 'none', padding: 0 }}
+                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface rounded-sm z-10 relative bg-transparent" style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', zIndex: 1, appearance: 'none', border: 'none', padding: 0 }}
                   onMouseEnter={() => setHover(star)}
                   onMouseLeave={() => setHover(null)}
                   onFocus={() => setHover(star)}
@@ -90,7 +81,7 @@ export function StarRating({ value, onChange, label, readonly = false }: StarRat
 }
 
 export function RatingDisplay({ value, size = 'sm' }: { value: number | null; size?: 'sm' | 'lg' }) {
-  if (!value) return <span style={{ color: '#8a8278' }}>—</span>
+  if (!value) return <span className="text-muted">—</span>
   const fills = getFills(value)
   const fontSize = size === 'lg' ? 20 : 15
 

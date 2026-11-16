@@ -1,14 +1,15 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { addPerson, createVisit } from '@/app/actions'
 import { StarRating } from '@/components/StarRating'
-import { OCCASIONS, DISH_CATEGORIES, CUISINE_TYPES } from '@/lib/utils'
+import { OCCASIONS, DISH_CATEGORIES, CUISINE_TYPES, normalizeText } from '@/lib/utils'
+import type { PersonRef, RestaurantRef } from '@/types'
 import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface Props {
-  restaurants: { id: string; name: string; cuisine_type: string | null }[]
-  people: { id: string; name: string }[]
+  restaurants: RestaurantRef[]
+  people: PersonRef[]
 }
 
 interface DishEntry {
@@ -18,6 +19,12 @@ interface DishEntry {
   would_order_again: boolean | null
   price: string
   peopleIds: string[]
+}
+
+// Data de hoje no fuso do aparelho (toISOString usaria UTC e viraria o dia às 21h em Brasília)
+function todayLocal() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export function NewVisitForm({ restaurants, people }: Props) {
@@ -33,9 +40,10 @@ export function NewVisitForm({ restaurants, people }: Props) {
   const [customCuisine, setCustomCuisine] = useState('')
 
   // Derived state for existing restaurants
+  const searchQ = normalizeText(restaurantSearchQuery)
   const filteredRestaurants = restaurants.filter(r =>
-    r.name.toLowerCase().includes(restaurantSearchQuery.toLowerCase()) ||
-    (r.cuisine_type && r.cuisine_type.toLowerCase().includes(restaurantSearchQuery.toLowerCase()))
+    normalizeText(r.name).includes(searchQ) ||
+    (r.cuisine_type && normalizeText(r.cuisine_type).includes(searchQ))
   )
 
   const selectedRestaurantObj = restaurants.find(r => r.id === restaurantId)
@@ -47,11 +55,11 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
   // Derived state for new restaurant similar matches
   const similarRestaurants = newRestaurant.name.trim().length > 2
-    ? restaurants.filter(r => r.name.toLowerCase().includes(newRestaurant.name.toLowerCase()))
+    ? restaurants.filter(r => normalizeText(r.name).includes(normalizeText(newRestaurant.name)))
     : []
 
   // Visita
-  const [visitedAt, setVisitedAt] = useState(new Date().toISOString().split('T')[0])
+  const [visitedAt, setVisitedAt] = useState(todayLocal)
   const [occasion, setOccasion] = useState('')
   const [notes, setNotes] = useState('')
   const [ratingOverall, setRatingOverall] = useState<number | null>(null)
@@ -72,17 +80,13 @@ export function NewVisitForm({ restaurants, people }: Props) {
     }
     setLoading(true)
     try {
-      const { data, error } = await supabase.from('people').insert({
-        name: newPersonName.substring(0, 100),
-      }).select('id, name').single()
-      if (error) throw error
-
-      setLocalPeople([...localPeople, { id: data.id, name: data.name }])
-      setSelectedPeople([...selectedPeople, data.id])
+      const person = await addPerson(newPersonName)
+      setLocalPeople([...localPeople, person])
+      setSelectedPeople([...selectedPeople, person.id])
       setNewPersonName('')
       setIsAddingPerson(false)
     } catch (err) {
-      alert('Erro ao adicionar pessoa. Verifique o console.')
+      alert('Erro ao adicionar pessoa.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -98,7 +102,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
     setDishExpanded(dishes.length)
   }
 
-  function updateDish(i: number, field: keyof DishEntry, value: any) {
+  function updateDish<K extends keyof DishEntry>(i: number, field: K, value: DishEntry[K]) {
     setDishes(dishes.map((d, idx) => idx === i ? { ...d, [field]: value } : d))
   }
 
@@ -160,67 +164,45 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
     setLoading(true)
     try {
-      let finalRestaurantId = restaurantId
-
-      if (isNewRestaurant) {
-        const finalCuisine = isCustomCuisine ? customCuisine : newRestaurant.cuisine_type
-        const parsedPrice = newRestaurant.price_range ? parseInt(newRestaurant.price_range || '') : null
-        const safePrice = !Number.isNaN(parsedPrice) ? parsedPrice : null
-        const { data, error } = await supabase.from('restaurants').insert({
-          name: newRestaurant.name.substring(0, 100),
-          cuisine_type: finalCuisine || null,
-          price_range: safePrice,
-          address: newRestaurant.address ? newRestaurant.address.substring(0, 200) : null,
-          notes: newRestaurant.notes ? newRestaurant.notes.substring(0, 500) : null,
-        }).select('id').single()
-        if (error) throw error
-        finalRestaurantId = data.id
+      const toNumber = (v: string) => {
+        const n = Number.parseFloat(v)
+        return Number.isFinite(n) ? n : null
       }
 
-      const { data: visit, error: visitError } = await supabase.from('visits').insert({
-        restaurant_id: finalRestaurantId,
+      await createVisit({
+        restaurantId: isNewRestaurant ? null : restaurantId,
+        newRestaurant: isNewRestaurant
+          ? {
+              name: newRestaurant.name,
+              cuisine_type: (isCustomCuisine ? customCuisine : newRestaurant.cuisine_type) || null,
+              price_range: newRestaurant.price_range ? toNumber(newRestaurant.price_range) : null,
+              address: newRestaurant.address || null,
+              notes: newRestaurant.notes || null,
+            }
+          : null,
         visited_at: visitedAt,
-        occasion: occasion ? occasion.substring(0, 100) : null,
+        occasion: occasion || null,
+        notes: notes || null,
         rating_overall: ratingOverall,
         rating_food: ratingFood,
         rating_service: ratingService,
         rating_ambience: ratingAmbience,
-        notes: notes ? notes.substring(0, 500) : null,
-      }).select('id').single()
-      if (visitError) throw visitError
-
-      if (selectedPeople.length > 0) {
-        const { error: vpError } = await supabase.from('visit_people').insert(
-          selectedPeople.map(pid => ({ visit_id: visit.id, person_id: pid }))
-        )
-        if (vpError) throw vpError
-      }
-
-      for (const dish of dishes.filter(d => d.name.trim())) {
-        const parsedPrice = dish.price ? parseFloat(dish.price || '') : null
-        const safePrice = !Number.isNaN(parsedPrice) ? parsedPrice : null
-        const { data: dishData, error: dishError } = await supabase.from('dishes').insert({
-          visit_id: visit.id,
-          name: dish.name.substring(0, 100),
-          category: dish.category || null,
-          rating: dish.rating,
-          would_order_again: dish.would_order_again,
-          price: safePrice,
-        }).select('id').single()
-        if (dishError) throw dishError
-
-        if (dishData && dish.peopleIds.length > 0) {
-          const { error: dpError } = await supabase.from('dish_people').insert(
-            dish.peopleIds.map(pid => ({ dish_id: dishData.id, person_id: pid }))
-          )
-          if (dpError) throw dpError
-        }
-      }
+        peopleIds: selectedPeople,
+        dishes: dishes
+          .filter(d => d.name.trim())
+          .map(d => ({
+            name: d.name,
+            category: d.category || null,
+            rating: d.rating,
+            would_order_again: d.would_order_again,
+            price: d.price ? toNumber(d.price) : null,
+            peopleIds: d.peopleIds,
+          })),
+      })
 
       router.push('/')
-      router.refresh()
     } catch (err) {
-      alert('Erro ao salvar. Verifique o console.')
+      alert('Erro ao salvar a visita.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -232,7 +214,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
       {/* Restaurante */}
       <div className="card">
-        <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Restaurante</h2>
+        <h2 className="font-display text-xl mb-4 text-accent">Restaurante</h2>
 
         <div className="flex gap-2 mb-3">
           <button type="button" className={`btn ${!isNewRestaurant ? 'btn-primary' : 'btn-ghost'}`}
@@ -244,11 +226,11 @@ export function NewVisitForm({ restaurants, people }: Props) {
         {!isNewRestaurant ? (
           <div>
             {restaurantId ? (
-              <div className="flex items-center justify-between p-3" style={{ border: '1px solid #3a3630', borderRadius: 8, background: '#1a1815' }}>
+              <div className="flex items-center justify-between p-3 border border-line-strong rounded-lg bg-surface">
                 <div>
                   <div className="font-display text-lg">{selectedRestaurantObj?.name}</div>
                   {selectedRestaurantObj?.cuisine_type && (
-                    <div className="text-xs" style={{ color: '#8a8278' }}>{selectedRestaurantObj.cuisine_type}</div>
+                    <div className="text-xs text-muted">{selectedRestaurantObj.cuisine_type}</div>
                   )}
                 </div>
                 <button type="button" className="btn btn-ghost text-xs" onClick={() => setRestaurantId('')}>Trocar</button>
@@ -262,24 +244,24 @@ export function NewVisitForm({ restaurants, people }: Props) {
                   onChange={e => setRestaurantSearchQuery(e.target.value)}
                   className="w-full"
                 />
-                <div className="flex flex-col max-h-48 overflow-y-auto" style={{ border: '1px solid #3a3630', borderRadius: 8, background: '#1a1815' }}>
+                <div className="flex flex-col max-h-48 overflow-y-auto border border-line-strong rounded-lg bg-surface">
                   {filteredRestaurants.length > 0 ? (
                     filteredRestaurants.map(r => (
                       <button
                         key={r.id}
                         type="button"
-                        className="text-left px-3 py-2 hover:bg-[#2a2622] transition-colors border-b border-[#2a2622] last:border-b-0"
+                        className="text-left px-3 py-2 hover:bg-line transition-colors border-b border-line last:border-b-0"
                         onClick={() => {
                           setRestaurantId(r.id)
                           setRestaurantSearchQuery('')
                         }}
                       >
                         <div className="font-medium">{r.name}</div>
-                        {r.cuisine_type && <div className="text-xs" style={{ color: '#8a8278' }}>{r.cuisine_type}</div>}
+                        {r.cuisine_type && <div className="text-xs text-muted">{r.cuisine_type}</div>}
                       </button>
                     ))
                   ) : (
-                    <div className="p-3 text-sm text-center" style={{ color: '#8a8278' }}>Nenhum restaurante encontrado.</div>
+                    <div className="p-3 text-sm text-center text-muted">Nenhum restaurante encontrado.</div>
                   )}
                 </div>
               </div>
@@ -295,13 +277,13 @@ export function NewVisitForm({ restaurants, people }: Props) {
                 value={newRestaurant.name} onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
 
               {similarRestaurants.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-20 flex flex-col max-h-48 overflow-y-auto shadow-lg" style={{ border: '1px solid #3a3630', borderRadius: 8, background: '#1a1815' }}>
-                  <div className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider" style={{ color: '#8a8278', background: '#0f0e0d' }}>Restaurantes similares já cadastrados</div>
+                <div className="absolute top-full left-0 right-0 mt-1 z-20 flex flex-col max-h-48 overflow-y-auto shadow-lg border border-line-strong rounded-lg bg-surface">
+                  <div className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-muted bg-bg">Restaurantes similares já cadastrados</div>
                   {similarRestaurants.map(r => (
                     <button
                       key={r.id}
                       type="button"
-                      className="text-left px-3 py-2 hover:bg-[#2a2622] transition-colors border-b border-[#2a2622] last:border-b-0"
+                      className="text-left px-3 py-2 hover:bg-line transition-colors border-b border-line last:border-b-0"
                       onClick={() => {
                         setRestaurantId(r.id)
                         setIsNewRestaurant(false)
@@ -309,7 +291,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
                       }}
                     >
                       <div className="font-medium">{r.name}</div>
-                      {r.cuisine_type && <div className="text-xs" style={{ color: '#8a8278' }}>{r.cuisine_type}</div>}
+                      {r.cuisine_type && <div className="text-xs text-muted">{r.cuisine_type}</div>}
                     </button>
                   ))}
                 </div>
@@ -360,14 +342,14 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
       {/* Detalhes da visita */}
       <div className="card">
-        <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Detalhes</h2>
+        <h2 className="font-display text-xl mb-4 text-accent">Detalhes</h2>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Data</label>
+            <label className="text-xs mb-1 block text-muted">Data</label>
             <input type="date" value={visitedAt} onChange={e => setVisitedAt(e.target.value)} required />
           </div>
           <div>
-            <label className="text-xs mb-1 block" style={{ color: '#8a8278' }}>Ocasião</label>
+            <label className="text-xs mb-1 block text-muted">Ocasião</label>
             <select value={occasion} onChange={e => setOccasion(e.target.value)}>
               <option value="">Sem ocasião</option>
               {OCCASIONS.map(o => <option key={o}>{o}</option>)}
@@ -380,7 +362,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
       {/* Avaliações */}
       <div className="card">
-        <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Avaliações</h2>
+        <h2 className="font-display text-xl mb-4 text-accent">Avaliações</h2>
         <div className="flex flex-col gap-4">
           <StarRating label="Geral (Média)" value={ratingOverall} onChange={() => {}} readonly />
           <StarRating
@@ -396,7 +378,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
 
       {/* Pessoas */}
       <div className="card">
-        <h2 className="font-display text-xl mb-4" style={{ color: '#c9a96e' }}>Quem foi</h2>
+        <h2 className="font-display text-xl mb-4 text-accent">Quem foi</h2>
         <div className="flex flex-wrap gap-2 mb-3">
           {localPeople.map(p => (
             <button key={p.id} type="button"
@@ -433,39 +415,38 @@ export function NewVisitForm({ restaurants, people }: Props) {
       {/* Pratos */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl" style={{ color: '#c9a96e' }}>Pratos</h2>
+          <h2 className="font-display text-xl text-accent">Pratos</h2>
           <button type="button" className="btn btn-ghost" onClick={addDish}>
             <Plus size={15} /> Adicionar prato
           </button>
         </div>
 
         {dishes.length === 0 && (
-          <p className="text-sm" style={{ color: '#8a8278' }}>Nenhum prato adicionado ainda.</p>
+          <p className="text-sm text-muted">Nenhum prato adicionado ainda.</p>
         )}
 
         <div className="flex flex-col gap-3">
           {dishes.map((dish, i) => (
-            <div key={i} style={{ border: '1px solid #2a2622', borderRadius: 8 }}>
+            <div key={i} className="border border-line rounded-lg">
               <div className="flex items-center gap-2 p-3 cursor-pointer"
                 onClick={() => setDishExpanded(dishExpanded === i ? null : i)}>
                 <input
-                  className="flex-1"
-                  style={{ border: 'none', background: 'transparent', padding: 0 }}
+                  className="flex-1 bg-transparent" style={{ border: 'none', padding: 0 }}
                   placeholder="Nome do prato *"
                   value={dish.name}
                   onChange={e => { e.stopPropagation(); updateDish(i, 'name', e.target.value) }}
                   onClick={e => e.stopPropagation()}
                 />
                 <button type="button" aria-label={dishExpanded === i ? "Recolher detalhes do prato" : "Expandir detalhes do prato"} onClick={e => { e.stopPropagation(); setDishExpanded(dishExpanded === i ? null : i) }}>
-                  {dishExpanded === i ? <ChevronUp size={16} style={{ color: '#8a8278' }} /> : <ChevronDown size={16} style={{ color: '#8a8278' }} />}
+                  {dishExpanded === i ? <ChevronUp size={16} className="text-muted" /> : <ChevronDown size={16} className="text-muted" />}
                 </button>
                 <button type="button" aria-label="Remover prato" onClick={e => { e.stopPropagation(); removeDish(i) }}>
-                  <X size={16} style={{ color: '#8a8278' }} />
+                  <X size={16} className="text-muted" />
                 </button>
               </div>
 
               {dishExpanded === i && (
-                <div className="px-3 pb-3 flex flex-col gap-3" style={{ borderTop: '1px solid #2a2622' }}>
+                <div className="px-3 pb-3 flex flex-col gap-3 border-t border-line">
                   <div className="grid grid-cols-2 gap-3 pt-3">
                     <select value={dish.category} onChange={e => updateDish(i, 'category', e.target.value)}>
                       <option value="">Categoria</option>
@@ -478,7 +459,7 @@ export function NewVisitForm({ restaurants, people }: Props) {
                   <StarRating label="Nota do prato" value={dish.rating} onChange={v => updateDish(i, 'rating', v)} />
 
                   <div className="flex gap-2">
-                    <span className="text-xs" style={{ color: '#8a8278', marginTop: 2 }}>Pediria de novo?</span>
+                    <span className="text-xs text-muted" style={{ marginTop: 2 }}>Pediria de novo?</span>
                     {[true, false].map(v => (
                       <button key={String(v)} type="button"
                         className={`tag cursor-pointer ${dish.would_order_again === v ? 'tag-accent' : ''}`}
@@ -489,9 +470,9 @@ export function NewVisitForm({ restaurants, people }: Props) {
                     ))}
                   </div>
 
-                  {people.length > 0 && (
+                  {localPeople.length > 0 && (
                     <div>
-                      <div className="text-xs mb-2" style={{ color: '#8a8278' }}>Quem pediu</div>
+                      <div className="text-xs mb-2 text-muted">Quem pediu</div>
                       <div className="flex flex-wrap gap-2">
                         {localPeople.map(p => (
                           <button key={p.id} type="button"

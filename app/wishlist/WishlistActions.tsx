@@ -1,35 +1,38 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useState, useTransition } from 'react'
 import { Plus, CheckCheck, X } from 'lucide-react'
+import { addWishlistPlace, markVisited } from '@/app/actions'
 import { CUISINE_TYPES } from '@/lib/utils'
 
-export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
-  const router = useRouter()
-  const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
-  const [loading, setLoading] = useState(false)
-
-  if (restaurantId) {
-    return (
-      <button
-        className="btn btn-ghost text-xs"
-        title="Marcar como visitado (remove da wishlist)"
-        onClick={async () => {
+export function MarkVisitedButton({ restaurantId }: { restaurantId: string }) {
+  const [pending, startTransition] = useTransition()
+  return (
+    <button
+      className="btn btn-ghost text-xs"
+      title="Marcar como visitado (remove da lista)"
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
           try {
-            const { error } = await supabase.from('restaurants').update({ wishlist: false }).eq('id', restaurantId)
-            if (error) throw error
-            router.refresh()
+            await markVisited(restaurantId)
           } catch (err) {
-            alert('Erro ao marcar como visitado. Verifique o console.')
-            console.error('Erro genérico:', err)
+            console.error(err)
+            alert('Erro ao marcar como visitado.')
           }
-        }}>
-        <CheckCheck size={14} /> Visitei
-      </button>
-    )
-  }
+        })
+      }
+    >
+      <CheckCheck size={14} /> Visitei
+    </button>
+  )
+}
+
+const EMPTY = { name: '', cuisine_type: '', price_range: '', address: '', notes: '' }
+
+export function AddWishlistPlace() {
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState(EMPTY)
+  const [pending, startTransition] = useTransition()
 
   if (!adding) {
     return (
@@ -39,38 +42,31 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
     )
   }
 
-  async function save() {
+  function save() {
     if (!form.name.trim()) return
-    setLoading(true)
-    try {
-      const parsedPrice = form.price_range ? parseInt(form.price_range || '') : null
-      const safePrice = !Number.isNaN(parsedPrice) ? parsedPrice : null
-      const { error } = await supabase.from('restaurants').insert({
-        name: form.name.substring(0, 100),
-        cuisine_type: form.cuisine_type || null,
-        price_range: safePrice,
-        address: form.address ? form.address.substring(0, 200) : null,
-        notes: form.notes ? form.notes.substring(0, 500) : null,
-        wishlist: true,
-      })
-      if (error) throw error
-
-      setAdding(false)
-      setForm({ name: '', cuisine_type: '', price_range: '', address: '', notes: '' })
-      router.refresh()
-    } catch (err) {
-      alert('Erro ao salvar. Verifique o console.')
-      console.error('Erro genérico:', err)
-    } finally {
-      setLoading(false)
-    }
+    startTransition(async () => {
+      try {
+        await addWishlistPlace({
+          name: form.name,
+          cuisine_type: form.cuisine_type || null,
+          price_range: form.price_range ? Number(form.price_range) : null,
+          address: form.address || null,
+          notes: form.notes || null,
+        })
+        setAdding(false)
+        setForm(EMPTY)
+      } catch (err) {
+        console.error(err)
+        alert('Erro ao salvar.')
+      }
+    })
   }
 
   return (
     <div className="card mt-2">
       <div className="flex items-center justify-between mb-3">
-        <span className="font-display" style={{ color: '#c9a96e' }}>Novo lugar</span>
-        <button aria-label="Cancelar" onClick={() => setAdding(false)}><X size={16} style={{ color: '#8a8278' }} /></button>
+        <span className="font-display text-accent">Novo lugar</span>
+        <button aria-label="Cancelar" className="text-muted" onClick={() => setAdding(false)}><X size={16} /></button>
       </div>
       <div className="flex flex-col gap-2">
         <input placeholder="Nome *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
@@ -87,8 +83,8 @@ export function WishlistActions({ restaurantId }: { restaurantId?: string }) {
         </div>
         <input placeholder="Endereço" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
         <textarea placeholder="Notas" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
-        <button className="btn btn-primary" onClick={save} disabled={loading}>
-          {loading ? 'Salvando…' : 'Salvar'}
+        <button className="btn btn-primary" onClick={save} disabled={pending}>
+          {pending ? 'Salvando…' : 'Salvar'}
         </button>
       </div>
     </div>

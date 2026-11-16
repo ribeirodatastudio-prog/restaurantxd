@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${display.variable} ${body.variable}`}>
-      <body className="bg-[#0f0e0d] text-[#f0ece4] font-body min-h-screen">
+      <body className="bg-bg text-ink font-body min-h-screen">
         <Nav />
         <main className="max-w-3xl mx-auto px-4 pb-16 pt-6">
           {children}
