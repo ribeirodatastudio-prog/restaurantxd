@@ -2,12 +2,21 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { getVisits } from '@/lib/queries'
 import { formatDate, priceLabel } from '@/lib/utils'
+import { VisitSearch } from './VisitSearch'
 
 export const dynamic = 'force-dynamic'
 
-export default async function HomePage({ searchParams }: { searchParams: { page?: string } }) {
+export default async function HomePage({ searchParams }: { searchParams: { page?: string; q?: string } }) {
   const page = Math.max(1, Number.parseInt(searchParams.page ?? '1', 10) || 1)
-  const { visits, hasMore } = await getVisits(page)
+  const q = (searchParams.q ?? '').trim().substring(0, 100)
+  const { visits, hasMore } = await getVisits(page, q)
+  const pageHref = (n: number) => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (n > 1) params.set('page', String(n))
+    const s = params.toString()
+    return s ? `/?${s}` : '/'
+  }
 
   return (
     <div>
@@ -18,7 +27,15 @@ export default async function HomePage({ searchParams }: { searchParams: { page?
         </Link>
       </div>
 
-      {visits.length === 0 && page === 1 && (
+      <VisitSearch initialQuery={q} />
+
+      {visits.length === 0 && page === 1 && q && (
+        <div className="card text-center py-10 text-muted">
+          <p>Nenhuma visita com “{q}”.</p>
+        </div>
+      )}
+
+      {visits.length === 0 && page === 1 && !q && (
         <div className="card text-center py-12 text-muted">
           <p className="font-display text-2xl mb-2">Nenhuma visita ainda</p>
           <p className="text-sm">Adicione sua primeira experiência</p>
@@ -82,9 +99,9 @@ export default async function HomePage({ searchParams }: { searchParams: { page?
       {(page > 1 || hasMore) && (
         <div className="flex justify-between mt-6">
           {page > 1 ? (
-            <Link href={page === 2 ? '/' : `/?page=${page - 1}`} className="btn btn-ghost">← Mais recentes</Link>
+            <Link href={pageHref(page - 1)} className="btn btn-ghost">← Mais recentes</Link>
           ) : <span />}
-          {hasMore && <Link href={`/?page=${page + 1}`} className="btn btn-ghost">Mais antigas →</Link>}
+          {hasMore && <Link href={pageHref(page + 1)} className="btn btn-ghost">Mais antigas →</Link>}
         </div>
       )}
     </div>

@@ -79,6 +79,19 @@ export interface PersonSummary extends PersonRef {
   last_restaurant: string | null
 }
 
+export interface PersonDetail extends PersonRef {
+  notes: string | null
+  places: (RestaurantRef & { visit_count: number; last_visit: string | null; avg_rating: number | null })[]
+  visits: {
+    id: string
+    visited_at: string
+    occasion: Occasion | null
+    rating_overall: number | null
+    restaurant_name: string | null
+    dishes_ordered: string[]
+  }[]
+}
+
 export interface Stats {
   totalVisits: number
   totalRestaurants: number
