@@ -1,8 +1,8 @@
 import 'server-only'
 import { db } from '@/lib/db'
-import { isUuid } from '@/lib/utils'
+import { isUuid, normalizeText } from '@/lib/utils'
 import type {
-  PersonRef, PersonSummary, Restaurant, RestaurantRef, RestaurantSummary,
+  PersonDetail, PersonRef, PersonSummary, Restaurant, RestaurantRef, RestaurantSummary,
   RestaurantVisit, Stats, VisitDetail, VisitSummary,
 } from '@/types'
 
@@ -11,9 +11,28 @@ import type {
 
 export const VISITS_PAGE_SIZE = 30
 
-export async function getVisits(page: number): Promise<{ visits: VisitSummary[]; hasMore: boolean }> {
+// Para buscas sem acento e sem caixa no Postgres, sem depender da extensão unaccent
+const ACCENTS_FROM = 'áàâãäåéèêëíìîïóòôõöúùûüçñÁÀÂÃÄÅÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ'
+const ACCENTS_TO   = 'aaaaaaeeeeiiiiooooouuuucnaaaaaaeeeeiiiiooooouuuucn'
+
+/** Busca por restaurante, prato ou pessoa; a home é paginada */
+export async function getVisits(page: number, query = ''): Promise<{ visits: VisitSummary[]; hasMore: boolean }> {
   const sql = db()
   const offset = (page - 1) * VISITS_PAGE_SIZE
+  const q = normalizeText(query)
+  const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`
+  const matches = (column: ReturnType<typeof sql.unsafe>) =>
+    sql`lower(translate(${column}, ${ACCENTS_FROM}, ${ACCENTS_TO})) like ${pattern}`
+  const where = q
+    ? sql`where (
+        ${matches(sql.unsafe('r.name'))}
+        or exists (select 1 from dishes d where d.visit_id = v.id and ${matches(sql.unsafe('d.name'))})
+        or exists (
+          select 1 from visit_people vp join people p on p.id = vp.person_id
+          where vp.visit_id = v.id and ${matches(sql.unsafe('p.name'))}
+        )
+      )`
+    : sql``
   const rows = await sql`
     select
       v.id,
@@ -35,6 +54,7 @@ export async function getVisits(page: number): Promise<{ visits: VisitSummary[];
       ), '[]') as dish_names
     from visits v
     left join restaurants r on r.id = v.restaurant_id
+    ${where}
     order by v.visited_at desc, v.created_at desc
     limit ${VISITS_PAGE_SIZE + 1} offset ${offset}
   `
@@ -222,5 +242,54 @@ export async function getStats(): Promise<Stats> {
     wouldNotOrder: totals.would_not_order,
     topVisits: topVisits as unknown as Stats['topVisits'],
     topCuisines: topCuisines as unknown as Stats['topCuisines'],
+  }
+}
+
+export async function getPersonWithVisits(id: string): Promise<PersonDetail | null> {
+  if (!isUuid(id)) return null
+  const sql = db()
+  const [person] = await sql`select id, name, notes from people where id = ${id}`
+  if (!person) return null
+
+  const [places, visits] = await Promise.all([
+    sql`
+      select
+        r.id, r.name, r.cuisine_type,
+        count(*)::int                   as visit_count,
+        max(v.visited_at)::text         as last_visit,
+        avg(v.rating_overall)::float8   as avg_rating
+      from visit_people vp
+      join visits v      on v.id = vp.visit_id
+      join restaurants r on r.id = v.restaurant_id
+      where vp.person_id = ${id}
+      group by r.id
+      order by visit_count desc, last_visit desc
+    `,
+    sql`
+      select
+        v.id,
+        v.visited_at::text          as visited_at,
+        v.occasion,
+        v.rating_overall::float8    as rating_overall,
+        r.name                      as restaurant_name,
+        coalesce((
+          select json_agg(d.name order by d.created_at)
+          from dishes d join dish_people dp on dp.dish_id = d.id
+          where d.visit_id = v.id and dp.person_id = ${id}
+        ), '[]') as dishes_ordered
+      from visit_people vp
+      join visits v           on v.id = vp.visit_id
+      left join restaurants r on r.id = v.restaurant_id
+      where vp.person_id = ${id}
+      order by v.visited_at desc, v.created_at desc
+    `,
+  ])
+
+  return {
+    id: person.id,
+    name: person.name,
+    notes: person.notes,
+    places: places as unknown as PersonDetail['places'],
+    visits: visits as unknown as PersonDetail['visits'],
   }
 }

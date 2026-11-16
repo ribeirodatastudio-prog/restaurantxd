@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { Plus, X } from 'lucide-react'
 import { addPerson, deletePerson } from '@/app/actions'
 import type { PersonSummary } from '@/types'
@@ -63,15 +64,15 @@ export function PeopleManager({ people }: { people: PersonSummary[] }) {
 
       <div className="flex flex-col gap-3">
         {people.map(p => (
-          <div key={p.id} className="card flex items-start justify-between gap-3">
-            <div>
+          <div key={p.id} className="card flex items-start justify-between gap-3 hover:border-line-strong transition-colors">
+            <Link href={`/people/${p.id}`} className="flex-1 min-w-0">
               <div className="font-display text-lg">{p.name}</div>
               <div className="text-sm mt-0.5 text-muted">
                 {p.visit_count} visita{p.visit_count !== 1 ? 's' : ''}
                 {p.last_restaurant && ` · última: ${p.last_restaurant}`}
               </div>
               {p.notes && <div className="text-xs mt-1 text-muted">{p.notes}</div>}
-            </div>
+            </Link>
             <button aria-label="Remover pessoa" className="btn-danger btn text-xs" disabled={pending} onClick={() => remove(p.id)}>
               <X size={13} />
             </button>
